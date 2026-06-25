@@ -13,9 +13,9 @@
         extend: { 
           fontFamily: { sans: ['Inter', 'sans-serif'] },
           colors: { 
-            corporate: '#0B1B3D', // Deep Blue
+            corporate: '#0B1B3D',
             corporateLight: '#1A365D',
-            accent: '#F59E0B', // Contrast Orange/Gold
+            accent: '#F59E0B',
             surface: '#FFFFFF',
             background: '#F1F5F9',
             textMain: '#0F172A',
@@ -50,11 +50,16 @@
   <script type="text/babel" data-presets="react">
     const { useState, useEffect, useMemo, useRef } = React;
 
-    // === URL GOOGLE APPS SCRIPT ===
+    // === URL GOOGLE APPS SCRIPT BARU (Pastikan ini URL Deploy yang memuat get_all_data) ===
     const GAS_URL = "https://script.google.com/macros/s/AKfycby_7rAmJQh9CM9Zcl0eqmApjga1JtTwX410VcrRDURnZdSARCdtS247saQeK-raJkNF/exec"; 
 
     function App() {
       const [view, setView] = useState('dashboard');
+      
+      // State Baru untuk Multi-Sheet
+      const [allSheetsData, setAllSheetsData] = useState({});
+      const [activeSheetName, setActiveSheetName] = useState('Data_KPM');
+      
       const [kpmData, setKpmData] = useState([]);
       const [isLoading, setIsLoading] = useState(false);
       const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
@@ -87,7 +92,7 @@
         try {
           const res = await fetch(GAS_URL, {
             method: 'POST',
-            redirect: 'follow', // Bypass CORS GAS
+            redirect: 'follow',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
             body: JSON.stringify(payload)
           });
@@ -113,21 +118,28 @@
         }
       };
 
+      // FUNGSI FETCH DIPERBARUI UNTUK MENGAMBIL SEMUA SHEET
       const fetchData = async () => {
         setIsLoading(true);
         try {
-          const timestamp = new Date().getTime(); // Anti-Cache
-          const url = `${GAS_URL}?action=get_data&sheet=Data_KPM&t=${timestamp}`;
+          const timestamp = new Date().getTime(); 
+          const url = `${GAS_URL}?action=get_all_data&t=${timestamp}`;
           
           const response = await fetch(url, { method: 'GET', redirect: 'follow' });
           const text = await response.text();
           const json = JSON.parse(text);
           
           if (json && json.status === 'success') {
-            setKpmData(json.data || []);
+            setAllSheetsData(json.data || {});
+            
+            // Pertahankan kpmData untuk logika Card Dashboard Original
+            if (json.data['Data_KPM']) {
+              setKpmData(json.data['Data_KPM']);
+            }
           }
         } catch (e) { 
           console.error("Fetch Error:", e);
+          showToast('Gagal menarik data. Cek koneksi.', 'error');
         } finally { 
           setIsLoading(false); 
         }
@@ -231,7 +243,6 @@
       return (
         <div className="max-w-2xl mx-auto min-h-screen bg-background relative pb-24 shadow-2xl">
           
-          {/* TOAST NOTIFICATION */}
           {toast.show && (
             <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] animate-slide w-[90%] max-w-md">
               <div className={`bg-white p-4 rounded-xl shadow-xl border-l-8 flex items-center gap-3 ${toast.type === 'success' ? 'border-green-500 text-green-700' : 'border-red-500 text-red-700'}`}>
@@ -241,7 +252,6 @@
             </div>
           )}
 
-          {/* GLOBAL LOADER */}
           {isLoading && (
             <div className="fixed inset-0 bg-corporate/20 backdrop-blur-sm z-[90] flex items-center justify-center">
               <div className="bg-white p-6 rounded-2xl shadow-2xl flex flex-col items-center">
@@ -268,11 +278,29 @@
                 <i className="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-corporateLight text-lg"></i>
                 <input 
                   type="text" 
-                  placeholder="Cari NIK / Nama Penerima..." 
+                  placeholder="Cari Data..." 
                   value={searchQuery} 
                   onChange={(e) => setSearchQuery(e.target.value)} 
                   className="w-full bg-surface border-0 text-textMain rounded-xl py-4 pl-12 pr-4 outline-none focus:ring-4 focus:ring-accent/40 font-bold text-sm shadow-inner transition-all" 
                 />
+              </div>
+            )}
+
+            {/* DROPDOWN PEMILIH SHEET DINAMIS (Muncul saat mode Data KPM) */}
+            {view === 'data' && Object.keys(allSheetsData).length > 0 && (
+              <div className="relative mt-4">
+                <select 
+                  value={activeSheetName} 
+                  onChange={(e) => setActiveSheetName(e.target.value)}
+                  className="w-full bg-surface/20 border border-surface/30 text-surface rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-accent font-bold text-sm shadow-inner transition-all appearance-none"
+                >
+                  {Object.keys(allSheetsData).map(sheetName => (
+                    <option key={sheetName} value={sheetName} className="text-corporate">
+                      📂 Menampilkan Database: {sheetName}
+                    </option>
+                  ))}
+                </select>
+                <i className="fas fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-surface pointer-events-none"></i>
               </div>
             )}
           </div>
@@ -316,84 +344,119 @@
               </div>
             )}
 
-            {/* VIEW: DATA KPM (CARD LAYOUT) */}
+            {/* VIEW: DATA KPM & TABEL DINAMIS */}
             {view === 'data' && (
               <div className="animate-slide space-y-5">
-                <div className="flex gap-4">
-                  <select value={filterKecamatan} onChange={(e) => { setFilterKecamatan(e.target.value); setFilterDesa(''); }} className="input-corporate bg-white shadow-sm flex-1 text-xs">
-                    <option value="">Semua Kecamatan</option>
-                    {uniqueKecamatan.map(kec => <option key={kec} value={kec}>{kec}</option>)}
-                  </select>
-                  <select value={filterDesa} onChange={(e) => setFilterDesa(e.target.value)} className="input-corporate bg-white shadow-sm flex-1 text-xs" disabled={!filterKecamatan}>
-                    <option value="">Semua Desa</option>
-                    {uniqueDesa.map(desa => <option key={desa} value={desa}>{desa}</option>)}
-                  </select>
-                </div>
+                
+                {activeSheetName === 'Data_KPM' ? (
+                  /* === TAMPILAN CARD ORIGINAL KHUSUS DATA_KPM === */
+                  <>
+                    <div className="flex gap-4">
+                      <select value={filterKecamatan} onChange={(e) => { setFilterKecamatan(e.target.value); setFilterDesa(''); }} className="input-corporate bg-white shadow-sm flex-1 text-xs">
+                        <option value="">Semua Kecamatan</option>
+                        {uniqueKecamatan.map(kec => <option key={kec} value={kec}>{kec}</option>)}
+                      </select>
+                      <select value={filterDesa} onChange={(e) => setFilterDesa(e.target.value)} className="input-corporate bg-white shadow-sm flex-1 text-xs" disabled={!filterKecamatan}>
+                        <option value="">Semua Desa</option>
+                        {uniqueDesa.map(desa => <option key={desa} value={desa}>{desa}</option>)}
+                      </select>
+                    </div>
 
-                <div className="space-y-5">
-                  {filteredData.map((item, index) => (
-                    <div key={index} className="card-modern p-0 flex flex-col relative overflow-hidden group">
-                      {/* Graduasi Badge */}
-                      {(item.Status_Graduasi && item.Status_Graduasi !== 'Belum Graduasi') && 
-                        <div className="absolute top-0 right-0 bg-accent text-white text-[10px] font-black px-4 py-1.5 rounded-bl-xl tracking-widest z-10 shadow-sm">
-                          {item.Status_Graduasi.toUpperCase()}
+                    <div className="space-y-5">
+                      {filteredData.map((item, index) => (
+                        <div key={index} className="card-modern p-0 flex flex-col relative overflow-hidden group">
+                          {(item.Status_Graduasi && item.Status_Graduasi !== 'Belum Graduasi') && 
+                            <div className="absolute top-0 right-0 bg-accent text-white text-[10px] font-black px-4 py-1.5 rounded-bl-xl tracking-widest z-10 shadow-sm">
+                              {item.Status_Graduasi.toUpperCase()}
+                            </div>
+                          }
+                          
+                          <div className="p-5 flex items-start">
+                            {item.Foto_URL && String(item.Foto_URL).includes('http') ? (
+                              <img src={item.Foto_URL} className="w-20 h-20 rounded-2xl object-cover border-2 border-slate-100 mr-5 shadow-sm" alt="profil" />
+                            ) : (
+                              <div className="w-20 h-20 bg-slate-100 text-slate-400 rounded-2xl flex items-center justify-center mr-5 border-2 border-slate-200"><i className="fas fa-camera text-2xl"></i></div>
+                            )}
+                            
+                            <div className="flex-1 pt-1">
+                              <h4 className="font-black text-corporate text-lg leading-tight mb-1">{item.Nama_Pengurus}</h4>
+                              <div className="inline-block bg-slate-100 text-slate-600 px-2 py-1 rounded font-mono text-[10px] font-bold mb-2">ID: {item.ID_KPM}</div>
+                              <p className="text-xs text-textMuted font-semibold leading-relaxed">
+                                <i className="fas fa-map-marker-alt text-accent mr-2"></i>{item.Desa}, Kec. {item.Kecamatan}
+                              </p>
+                            </div>
+                          </div>
+                          
+                          <div className="px-5 pb-5">
+                            <div className="bg-slate-50 rounded-xl p-3 grid grid-cols-2 gap-3 border border-slate-100">
+                              <div>
+                                <p className="label-corporate mb-1">NIK KTP</p>
+                                <p className="text-xs font-black text-corporate">{item.NIK || '-'}</p>
+                              </div>
+                              <div>
+                                <p className="label-corporate mb-1">Tanggungan</p>
+                                <p className="text-xs font-black text-corporate">{item.Jumlah_Komponen || '0'} Komponen</p>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="bg-slate-50 flex border-t border-slate-100 divide-x divide-slate-100">
+                            <button onClick={() => { 
+                              setFormData({
+                                rowIndex: item.rowIndex, id_kpm: item.ID_KPM, nama_pengurus: item.Nama_Pengurus,
+                                nik: item.NIK, alamat: item.Alamat, kecamatan: item.Kecamatan, desa: item.Desa,
+                                pekerjaan: item.Pekerjaan, jumlah_komponen: item.Jumlah_Komponen,
+                                status_graduasi: item.Status_Graduasi, foto_url: item.Foto_URL
+                              }); 
+                              setView('form_kpm'); 
+                            }} className="flex-1 py-3 text-sm font-bold text-corporate hover:bg-slate-100 transition"><i className="fas fa-pen mr-2"></i> EDIT DATA</button>
+                            
+                            <button onClick={() => deleteKPM(item.rowIndex)} className="flex-1 py-3 text-sm font-bold text-red-600 hover:bg-red-50 transition"><i className="fas fa-trash mr-2"></i> HAPUS</button>
+                          </div>
                         </div>
-                      }
-                      
-                      <div className="p-5 flex items-start">
-                        {/* Foto Profil KPM */}
-                        {item.Foto_URL && String(item.Foto_URL).includes('http') ? (
-                          <img src={item.Foto_URL} className="w-20 h-20 rounded-2xl object-cover border-2 border-slate-100 mr-5 shadow-sm" alt="profil" />
-                        ) : (
-                          <div className="w-20 h-20 bg-slate-100 text-slate-400 rounded-2xl flex items-center justify-center mr-5 border-2 border-slate-200"><i className="fas fa-camera text-2xl"></i></div>
+                      ))}
+                      {filteredData.length === 0 && !isLoading && (
+                        <div className="text-center py-16 bg-white rounded-2xl border-2 border-dashed border-slate-300">
+                          <i className="fas fa-folder-open text-5xl mb-4 text-slate-300"></i>
+                          <p className="font-bold text-slate-500">Data Tidak Ditemukan</p>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  /* === TAMPILAN TABEL DINAMIS UNTUK SHEET LAINNYA === */
+                  <div className="card-modern overflow-x-auto shadow-sm">
+                    <table className="w-full text-sm text-left">
+                      <thead className="bg-corporate text-white">
+                        <tr>
+                          {allSheetsData[activeSheetName]?.[0] && Object.keys(allSheetsData[activeSheetName][0])
+                            .filter(key => key !== 'rowIndex')
+                            .map(key => <th key={key} className="p-4 whitespace-nowrap font-bold text-xs uppercase tracking-wider border-b border-white/10">{key.replace(/_/g, ' ')}</th>)}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {allSheetsData[activeSheetName]?.filter(row => {
+                           if(!searchQuery) return true;
+                           return Object.values(row).some(val => String(val).toLowerCase().includes(searchQuery.toLowerCase()));
+                        }).map((row, i) => (
+                          <tr key={i} className="hover:bg-slate-50 transition-colors">
+                            {Object.keys(row).filter(k => k !== 'rowIndex').map((key, j) => (
+                              <td key={j} className="p-4 whitespace-nowrap text-textMuted font-medium">{row[key] || '-'}</td>
+                            ))}
+                          </tr>
+                        ))}
+                        {(!allSheetsData[activeSheetName] || allSheetsData[activeSheetName].length === 0) && (
+                           <tr>
+                             <td colSpan="100%" className="text-center py-16">
+                               <i className="fas fa-folder-open text-5xl mb-4 text-slate-300"></i>
+                               <p className="font-bold text-slate-500">Data Kosong di Sheet Ini</p>
+                             </td>
+                           </tr>
                         )}
-                        
-                        <div className="flex-1 pt-1">
-                          <h4 className="font-black text-corporate text-lg leading-tight mb-1">{item.Nama_Pengurus}</h4>
-                          <div className="inline-block bg-slate-100 text-slate-600 px-2 py-1 rounded font-mono text-[10px] font-bold mb-2">ID: {item.ID_KPM}</div>
-                          <p className="text-xs text-textMuted font-semibold leading-relaxed">
-                            <i className="fas fa-map-marker-alt text-accent mr-2"></i>{item.Desa}, Kec. {item.Kecamatan}
-                          </p>
-                        </div>
-                      </div>
-                      
-                      {/* Info Tambahan */}
-                      <div className="px-5 pb-5">
-                        <div className="bg-slate-50 rounded-xl p-3 grid grid-cols-2 gap-3 border border-slate-100">
-                          <div>
-                            <p className="label-corporate mb-1">NIK KTP</p>
-                            <p className="text-xs font-black text-corporate">{item.NIK || '-'}</p>
-                          </div>
-                          <div>
-                            <p className="label-corporate mb-1">Tanggungan</p>
-                            <p className="text-xs font-black text-corporate">{item.Jumlah_Komponen || '0'} Komponen</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Action Buttons */}
-                      <div className="bg-slate-50 flex border-t border-slate-100 divide-x divide-slate-100">
-                        <button onClick={() => { 
-                          setFormData({
-                            rowIndex: item.rowIndex, id_kpm: item.ID_KPM, nama_pengurus: item.Nama_Pengurus,
-                            nik: item.NIK, alamat: item.Alamat, kecamatan: item.Kecamatan, desa: item.Desa,
-                            pekerjaan: item.Pekerjaan, jumlah_komponen: item.Jumlah_Komponen,
-                            status_graduasi: item.Status_Graduasi, foto_url: item.Foto_URL
-                          }); 
-                          setView('form_kpm'); 
-                        }} className="flex-1 py-3 text-sm font-bold text-corporate hover:bg-slate-100 transition"><i className="fas fa-pen mr-2"></i> EDIT DATA</button>
-                        
-                        <button onClick={() => deleteKPM(item.rowIndex)} className="flex-1 py-3 text-sm font-bold text-red-600 hover:bg-red-50 transition"><i className="fas fa-trash mr-2"></i> HAPUS</button>
-                      </div>
-                    </div>
-                  ))}
-                  {filteredData.length === 0 && !isLoading && (
-                    <div className="text-center py-16 bg-white rounded-2xl border-2 border-dashed border-slate-300">
-                      <i className="fas fa-folder-open text-5xl mb-4 text-slate-300"></i>
-                      <p className="font-bold text-slate-500">Data Tidak Ditemukan</p>
-                    </div>
-                  )}
-                </div>
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             )}
 

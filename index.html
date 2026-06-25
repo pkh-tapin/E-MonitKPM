@@ -29,12 +29,15 @@
     .card-modern { background-color: #FFFFFF; border: 1px solid #E2E8F0; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05); border-radius: 16px; overflow: hidden; }
     .input-corporate { width: 100%; background-color: #F8FAFC; border: 2px solid #E2E8F0; border-radius: 10px; padding: 12px 16px; outline: none; color: #0F172A; font-weight: 600; font-size: 14px; transition: all 0.2s; }
     .input-corporate:focus { border-color: #0B1B3D; background-color: #FFFFFF; box-shadow: 0 0 0 4px rgba(11, 27, 61, 0.1); }
+    .input-corporate:disabled { background-color: #E2E8F0; color: #94A3B8; cursor: not-allowed; }
     .label-corporate { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #475569; margin-bottom: 6px; display: block; }
-    @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    .animate-slide { animation: slideUp 0.3s ease-out forwards; }
+    
+    /* TRANSISI MENU HALUS ELEGAN */
+    @keyframes smoothFade { from { opacity: 0; transform: translateY(6px) scale(0.99); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    .animate-slide { animation: smoothFade 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-thumb { background-color: #CBD5E1; border-radius: 10px; }
-    /* Mempercepat tap pada mobile */
     * { touch-action: manipulation; }
   </style>
 </head>
@@ -44,10 +47,7 @@
   <script type="text/babel" data-presets="react">
     const { useState, useEffect, useMemo, useRef } = React;
 
-    // === GANTI DENGAN URL DEPLOY BARU ===
     const GAS_URL = "https://script.google.com/macros/s/AKfycby_7rAmJQh9CM9Zcl0eqmApjga1JtTwX410VcrRDURnZdSARCdtS247saQeK-raJkNF/exec"; 
-
-    // Kolom sistem
     const SYSTEM_COLS = ["ID_KPM", "Tanggal_Terdaftar", "Terakhir_Update", "rowIndex"];
 
     function App() {
@@ -66,21 +66,19 @@
       const [formData, setFormData] = useState({});
       const [fileUploads, setFileUploads] = useState({}); 
 
-      // State khusus Monitoring
+      // State Khusus Smart Filter Monitoring
+      const [monKec, setMonKec] = useState('');
+      const [monDesa, setMonDesa] = useState('');
       const [monKpm, setMonKpm] = useState('');
-      const [monJenis, setMonJenis] = useState('penyaluran'); 
-      const [monTahap, setMonTahap] = useState('Penyaluran_Tahap_1');
-      const [monBulan, setMonBulan] = useState('P2K2_Bln_1');
-      const [monStatus, setMonStatus] = useState('Tersalurkan');
 
       useEffect(() => { fetchData(); }, []);
 
       const showToast = (message, type = 'success') => {
         setToast({ show: true, message, type });
-        setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 4000);
+        setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3500);
       };
 
-      const callAPI = async (payload, returnRaw = false) => {
+      const callAPI = async (payload) => {
         try {
           const res = await fetch(GAS_URL, {
             method: 'POST', redirect: 'follow',
@@ -88,10 +86,7 @@
             body: JSON.stringify(payload)
           });
           return await res.json();
-        } catch (err) {
-          console.error(err);
-          return null;
-        }
+        } catch (err) { console.error(err); return null; }
       };
 
       const fetchData = async () => {
@@ -108,11 +103,10 @@
               setKpmData(json.data['Data_KPM'].rows || []);
             }
           }
-        } catch (e) { showToast('Gagal menarik data', 'error'); } 
+        } catch (e) { showToast('Gagal menarik data database', 'error'); } 
         finally { setIsSyncing(false); }
       };
 
-      // Handle Form Dinamis
       const handleInputChange = (colName, value) => {
         setFormData(prev => ({...prev, [colName]: value}));
       };
@@ -175,12 +169,8 @@
         }
         
         const success = await callAPI({ action: "save_record", sheetName: "Data_KPM", payload: finalData, rowIndex: formData.rowIndex });
-        if(success) {
-          showToast('✅ Data sukses disinkronkan!', 'success');
-          fetchData(); 
-        } else {
-          showToast('❌ Gagal sinkron ke database.', 'error');
-        }
+        if(success) { showToast('✅ Data sukses disinkronkan!', 'success'); fetchData(); } 
+        else { showToast('❌ Gagal sinkron ke database.', 'error'); }
         setIsSyncing(false);
         setFileUploads({});
       };
@@ -193,29 +183,29 @@
         fetchData();
       };
 
-      const submitMonitoring = async () => {
-        if(!monKpm) return showToast('Pilih KPM terlebih dahulu!', 'error');
-        
-        showToast('🔄 Update Monitoring di latar belakang...', 'success');
-        setView('dashboard'); // Langsung pindah layar
-        setIsSyncing(true);
-
-        const target = monJenis === 'penyaluran' ? monTahap : monBulan;
-        const success = await callAPI({
-          action: "update_monitoring", idKpm: monKpm, kolomTarget: target, nilaiTarget: monStatus
+      // ==========================================
+      // OPTIMISTIC MONITORING ENGINE (TANPA LOADING)
+      // ==========================================
+      const handleOptimisticMonitoring = (idKpm, targetCol, newVal) => {
+        // 1. Ubah UI Detik Itu Juga
+        setAllSheetsData(prev => {
+          const monSheet = prev['Monitoring'] || { headers: ['ID_KPM'], rows: [] };
+          const rows = [...monSheet.rows];
+          const idx = rows.findIndex(r => r.ID_KPM === idKpm);
+          
+          if (idx > -1) rows[idx] = { ...rows[idx], [targetCol]: newVal };
+          else rows.push({ ID_KPM: idKpm, [targetCol]: newVal });
+          
+          return { ...prev, Monitoring: { ...monSheet, rows } };
         });
 
-        if(success) {
-          showToast('✅ Status Monitoring berhasil diperbarui!', 'success');
-          setMonKpm('');
-          fetchData(); // Sync untuk rekap terbaru
-        } else {
-          showToast('❌ Gagal update monitoring.', 'error');
-        }
-        setIsSyncing(false);
+        // 2. Tembak GAS di Latar Belakang Tanpa Jeda
+        callAPI({
+          action: "update_monitoring", idKpm: idKpm, kolomTarget: targetCol, nilaiTarget: newVal
+        });
       };
 
-      // FUNGSI REKAP KEHADIRAN & PENYALURAN
+      // Rekap Cepat untuk Card Atas Monitoring
       const rekapMonitoring = useMemo(() => {
         if(!monKpm || !allSheetsData['Monitoring']) return { hadir: 0, disalurkan: 0 };
         const record = allSheetsData['Monitoring'].rows.find(r => r.ID_KPM === monKpm);
@@ -223,12 +213,19 @@
         
         let hadir = 0; let disalurkan = 0;
         for(let i=1; i<=12; i++) if(record[`P2K2_Bln_${i}`] === 'Hadir') hadir++;
-        for(let i=1; i<=4; i++) if(record[`Penyaluran_Tahap_${i}`] === 'Tersalurkan') disalurkan++;
-        
+        for(let i=1; i<=4; i++) {
+          const v = record[`Penyaluran_Tahap_${i}`];
+          if(v && v !== 'Belum Salur' && v !== 'Belum' && v !== '') disalurkan++;
+        }
         return { hadir, disalurkan };
       }, [monKpm, allSheetsData]);
 
-      // FILTER & SORTING A-Z
+      const activeMonRecord = useMemo(() => {
+        if (!monKpm || !allSheetsData['Monitoring']) return {};
+        return allSheetsData['Monitoring'].rows.find(r => r.ID_KPM === monKpm) || {};
+      }, [monKpm, allSheetsData]);
+
+      // FILTER & SORTING A-Z (DATA KPM)
       const uniqueKecamatan = useMemo(() => [...new Set(kpmData.map(item => item.Kecamatan).filter(Boolean))], [kpmData]);
       const uniqueDesa = useMemo(() => {
         if (!filterKecamatan) return [];
@@ -245,16 +242,27 @@
         return result.sort((a, b) => String(a.Nama_Pengurus || '').localeCompare(String(b.Nama_Pengurus || '')));
       }, [kpmData, filterKecamatan, filterDesa, searchQuery]);
 
-      // OPTIMASI KLIK MENU AGAR CEPAT
+      // SMART FILTER DROPDOWNS (MONITORING)
+      const monUniqueDesa = useMemo(() => {
+        if (!monKec) return [];
+        return [...new Set(kpmData.filter(item => item.Kecamatan === monKec).map(item => item.Desa).filter(Boolean))];
+      }, [kpmData, monKec]);
+
+      const monFilteredKpmList = useMemo(() => {
+        if (!monDesa) return [];
+        return kpmData
+          .filter(item => item.Kecamatan === monKec && item.Desa === monDesa)
+          .sort((a, b) => String(a.Nama_Pengurus || '').localeCompare(String(b.Nama_Pengurus || '')));
+      }, [kpmData, monKec, monDesa]);
+
       const handleMenuClick = (menuId) => {
         setView(menuId);
-        window.scrollTo({ top: 0, behavior: 'smooth' }); // Langsung ke atas saat pindah tab
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       };
 
       return (
         <div className="max-w-2xl mx-auto min-h-screen bg-background relative pb-24 shadow-2xl">
           
-          {/* TOAST Latar Belakang */}
           {toast.show && (
             <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] animate-slide w-[90%] max-w-md">
               <div className={`bg-white p-4 rounded-xl shadow-xl border-l-8 flex items-center gap-3 ${toast.type === 'success' ? 'border-green-500 text-green-700' : 'border-red-500 text-red-700'}`}>
@@ -264,7 +272,6 @@
             </div>
           )}
 
-          {/* HEADER MODERN */}
           <div className="bg-corporate px-6 pt-12 pb-10 rounded-b-[2rem] relative z-20 shadow-xl">
             <div className="flex justify-between items-center mb-6">
               <div>
@@ -289,7 +296,6 @@
 
           <div className="p-6 relative z-10 space-y-6 -mt-6">
             
-            {/* VIEW: DASHBOARD */}
             {view === 'dashboard' && (
               <div className="animate-slide space-y-6">
                 <div className="grid grid-cols-2 gap-4">
@@ -316,7 +322,7 @@
                     <div className="w-14 h-14 bg-accent text-corporate rounded-2xl flex items-center justify-center mr-5 shadow-md group-hover:scale-105 transition"><i className="fas fa-clipboard-check text-xl"></i></div>
                     <div className="flex-1">
                       <h4 className="font-black text-textMain text-base">Update Monitoring</h4>
-                      <p className="text-xs text-textMuted mt-1 font-medium">Catat Penyaluran & Absen P2K2</p>
+                      <p className="text-xs text-textMuted mt-1 font-medium">Ceklis Penyaluran & Absen P2K2</p>
                     </div>
                     <i className="fas fa-chevron-right text-slate-300"></i>
                   </div>
@@ -324,7 +330,6 @@
               </div>
             )}
 
-            {/* VIEW: DATA KPM (CARD & FILTER) */}
             {view === 'data' && (
               <div className="animate-slide space-y-5">
                 <div className="flex gap-4">
@@ -371,73 +376,164 @@
               </div>
             )}
 
-            {/* VIEW: MONITORING (DIKEMBALIKAN & DISEMPURNAKAN) */}
+            {/* VIEW: MONITORING ENTERPRISE (SMART FILTER & CEKLIS INSTAN) */}
             {view === 'monitoring' && (
               <div className="animate-slide space-y-6">
-                <div className="flex bg-slate-200 p-1.5 rounded-xl">
-                  <button onClick={() => { setMonJenis('penyaluran'); setMonStatus('Tersalurkan'); }} className={`flex-1 py-3 text-xs font-black uppercase tracking-wider rounded-lg transition-all ${monJenis === 'penyaluran' ? 'bg-white shadow-md text-corporate' : 'text-slate-500 hover:text-slate-700'}`}>Penyaluran</button>
-                  <button onClick={() => { setMonJenis('pertemuan'); setMonStatus('Hadir'); }} className={`flex-1 py-3 text-xs font-black uppercase tracking-wider rounded-lg transition-all ${monJenis === 'pertemuan' ? 'bg-white shadow-md text-corporate' : 'text-slate-500 hover:text-slate-700'}`}>Absen P2K2</button>
-                </div>
-
-                <div className="card-modern p-6 md:p-8 border-t-4 border-t-accent">
-                  <div className="mb-6">
-                    <label className="label-corporate mb-2">Pilih KPM Target</label>
-                    <select className="input-corporate" value={monKpm} onChange={(e) => setMonKpm(e.target.value)}>
-                      <option value="">-- Ketik/Pilih Nama Penerima --</option>
-                      {kpmData.map(item => <option key={item.ID_KPM} value={item.ID_KPM}>{item.Nama_Pengurus} - {item.Desa}</option>)}
-                    </select>
+                
+                {/* SMART FILTER PANEL */}
+                <div className="card-modern p-5 bg-white border-t-4 border-t-accent space-y-4 shadow-lg">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="label-corporate">1. Kecamatan</label>
+                      <select className="input-corporate text-xs" value={monKec} onChange={(e) => { setMonKec(e.target.value); setMonDesa(''); setMonKpm(''); }}>
+                        <option value="">-- Kecamatan --</option>
+                        {uniqueKecamatan.map(k => <option key={k} value={k}>{k}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="label-corporate">2. Desa</label>
+                      <select className="input-corporate text-xs" value={monDesa} onChange={(e) => { setMonDesa(e.target.value); setMonKpm(''); }} disabled={!monKec}>
+                        <option value="">-- Desa --</option>
+                        {monUniqueDesa.map(d => <option key={d} value={d}>{d}</option>)}
+                      </select>
+                    </div>
                   </div>
 
-                  {/* KOTAK INFORMASI REKAP KEHADIRAN & PENYALURAN EKSKLUSIF */}
-                  {monKpm && (
-                    <div className="mb-6 bg-blue-50 border border-blue-100 rounded-xl p-4 flex justify-between items-center animate-slide">
+                  <div>
+                    <label className="label-corporate text-corporate">3. Pilih Penerima Manfaat (A - Z)</label>
+                    <select className="input-corporate border-corporate text-sm" value={monKpm} onChange={(e) => setMonKpm(e.target.value)} disabled={!monDesa}>
+                      <option value="">-- {monDesa ? 'Pilih Nama KPM Terdaftar' : 'Pilih Desa Terlebih Dahulu'} --</option>
+                      {monFilteredKpmList.map(item => <option key={item.ID_KPM} value={item.ID_KPM}>{item.Nama_Pengurus} ({item.ID_KPM})</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                {/* AREA CEKLIS INSTAN (MUNCUL JIKA NAMA TERPILIH) */}
+                {monKpm && (
+                  <div className="space-y-6 animate-slide">
+                    
+                    <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 flex justify-between items-center shadow-sm">
                       <div>
-                        <p className="text-[10px] font-black text-blue-800 uppercase tracking-widest mb-1">Total Absen P2K2</p>
-                        <p className="text-2xl font-black text-corporate">{rekapMonitoring.hadir} <span className="text-sm text-slate-500">/ 12 Bulan</span></p>
+                        <p className="text-[10px] font-black text-blue-800 uppercase tracking-widest">Total Absen P2K2</p>
+                        <p className="text-2xl font-black text-corporate mt-0.5">{rekapMonitoring.hadir} <span className="text-xs font-normal text-slate-500">/ 12 Bln</span></p>
                       </div>
                       <div className="text-right">
-                        <p className="text-[10px] font-black text-blue-800 uppercase tracking-widest mb-1">Sukses Salur</p>
-                        <p className="text-2xl font-black text-accent">{rekapMonitoring.disalurkan} <span className="text-sm text-slate-500">/ 4 Tahap</span></p>
+                        <p className="text-[10px] font-black text-amber-700 uppercase tracking-widest">Penyaluran</p>
+                        <p className="text-2xl font-black text-accent mt-0.5">{rekapMonitoring.disalurkan} <span className="text-xs font-normal text-slate-500">/ 4 Tahap</span></p>
                       </div>
                     </div>
-                  )}
 
-                  {monJenis === 'penyaluran' ? (
-                    <div className="mb-8 animate-slide">
-                      <label className="label-corporate mb-2">Tahap Penyaluran</label>
-                      <select className="input-corporate mb-5" value={monTahap} onChange={(e) => setMonTahap(e.target.value)}>
-                        {['Penyaluran_Tahap_1', 'Penyaluran_Tahap_2', 'Penyaluran_Tahap_3', 'Penyaluran_Tahap_4'].map(t => <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>)}
-                      </select>
-                      <label className="label-corporate mb-2">Status Rekening</label>
-                      <select className="input-corporate" value={monStatus} onChange={(e) => setMonStatus(e.target.value)}>
-                        <option value="Tersalurkan">Tersalurkan (Sukses)</option>
-                        <option value="Tertunda">Tertunda</option>
-                        <option value="KKS Bermasalah">KKS Bermasalah</option>
-                      </select>
-                    </div>
-                  ) : (
-                    <div className="mb-8 animate-slide">
-                      <label className="label-corporate mb-2">Bulan Pertemuan</label>
-                      <select className="input-corporate mb-5" value={monBulan} onChange={(e) => setMonBulan(e.target.value)}>
-                        {Array.from({length: 12}, (_, i) => `P2K2_Bln_${i+1}`).map(b => <option key={b} value={b}>{b.replace(/_/g, ' ')}</option>)}
-                      </select>
-                      <label className="label-corporate mb-2">Status Kehadiran</label>
-                      <select className="input-corporate" value={monStatus} onChange={(e) => setMonStatus(e.target.value)}>
-                        <option value="Hadir">Hadir</option>
-                        <option value="Izin">Izin</option>
-                        <option value="Alpa">Alpa</option>
-                      </select>
-                    </div>
-                  )}
+                    {/* DUA KOLOM SAJA */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      
+                      {/* KOLOM KIRI: ABSEN P2K2 */}
+                      <div className="card-modern p-5 border-t-4 border-t-corporate">
+                        <h4 className="font-black text-corporate text-sm uppercase tracking-wider mb-4 pb-2 border-b flex items-center gap-2">
+                          <i className="fas fa-user-check text-accent"></i> Absensi P2K2 (12 Bulan)
+                        </h4>
+                        <div className="divide-y divide-slate-100">
+                          {Array.from({ length: 12 }, (_, i) => i + 1).map(bln => {
+                            const colKey = `P2K2_Bln_${bln}`;
+                            const currentVal = activeMonRecord[colKey] || '';
+                            const isHadir = currentVal === 'Hadir';
 
-                  <button onClick={submitMonitoring} className="w-full py-4 bg-corporate hover:bg-corporateLight text-surface rounded-xl font-black text-sm tracking-widest shadow-xl transition">
-                    SIMPAN REKAMAN
-                  </button>
-                </div>
+                            return (
+                              <div key={bln} className="py-2.5 flex items-center justify-between">
+                                <span className="text-xs font-bold text-slate-700">Bulan {bln}</span>
+                                
+                                <div className="flex items-center gap-2">
+                                  <button 
+                                    onClick={() => handleOptimisticMonitoring(monKpm, colKey, isHadir ? '' : 'Hadir')}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-black flex items-center gap-1.5 transition-all active:scale-95 ${isHadir ? 'bg-green-600 text-white shadow' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}
+                                  >
+                                    <i className={`fas ${isHadir ? 'fa-check-square' : 'fa-square'}`}></i> Hadir
+                                  </button>
+
+                                  {!isHadir && (
+                                    <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200 animate-slide">
+                                      {['Izin', 'Alpa'].map(st => (
+                                        <button
+                                          key={st}
+                                          onClick={() => handleOptimisticMonitoring(monKpm, colKey, currentVal === st ? '' : st)}
+                                          className={`px-2 py-1 text-[10px] font-extrabold rounded transition ${currentVal === st ? (st === 'Izin' ? 'bg-amber-500 text-white' : 'bg-red-600 text-white') : 'text-slate-500 hover:text-black'}`}
+                                        >
+                                          {st}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* KOLOM KANAN: PENYALURAN TAHAP 1-4 */}
+                      <div className="card-modern p-5 border-t-4 border-t-accent h-fit">
+                        <h4 className="font-black text-corporate text-sm uppercase tracking-wider mb-4 pb-2 border-b flex items-center gap-2">
+                          <i className="fas fa-boxes text-green-600"></i> Ceklis Penyaluran
+                        </h4>
+                        <div className="divide-y divide-slate-100 space-y-3">
+                          {[1, 2, 3, 4].map(tahap => {
+                            const colKey = `Penyaluran_Tahap_${tahap}`;
+                            const currentVal = activeMonRecord[colKey] || '';
+                            
+                            const isPkh = currentVal.includes('PKH') || currentVal === 'Tersalurkan';
+                            const isSembako = currentVal.includes('Sembako') || currentVal === 'Tersalurkan';
+
+                            const handleSalurToggle = (type) => {
+                              let nextPkh = isPkh; let nextSembako = isSembako;
+                              if (type === 'PKH') nextPkh = !nextPkh;
+                              if (type === 'Sembako') nextSembako = !nextSembako;
+
+                              let valToSend = '';
+                              if (nextPkh && nextSembako) valToSend = 'Salur PKH & Sembako';
+                              else if (nextPkh) valToSend = 'Salur PKH Saja';
+                              else if (nextSembako) valToSend = 'Salur Sembako Saja';
+                              else valToSend = 'Belum Salur';
+
+                              handleOptimisticMonitoring(monKpm, colKey, valToSend);
+                            };
+
+                            return (
+                              <div key={tahap} className="pt-3 pb-1">
+                                <div className="flex justify-between items-center mb-2">
+                                  <span className="text-xs font-black text-corporate">Tahap {tahap}</span>
+                                  <span className={`text-[9px] font-black px-2 py-0.5 rounded tracking-wider uppercase ${currentVal && currentVal !== 'Belum Salur' ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-400'}`}>
+                                    {currentVal || 'Belum Salur'}
+                                  </span>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-2">
+                                  <button
+                                    onClick={() => handleSalurToggle('PKH')}
+                                    className={`py-2.5 px-3 rounded-xl border text-xs font-black flex items-center justify-center gap-2 transition-all active:scale-95 ${isPkh ? 'bg-corporate border-corporate text-white shadow-md' : 'bg-slate-50 border-slate-200 text-slate-400 hover:bg-slate-100'}`}
+                                  >
+                                    <i className={`fas ${isPkh ? 'fa-check-circle text-accent' : 'fa-circle'}`}></i> PKH
+                                  </button>
+
+                                  <button
+                                    onClick={() => handleSalurToggle('Sembako')}
+                                    className={`py-2.5 px-3 rounded-xl border text-xs font-black flex items-center justify-center gap-2 transition-all active:scale-95 ${isSembako ? 'bg-amber-500 border-amber-500 text-white shadow-md' : 'bg-slate-50 border-slate-200 text-slate-400 hover:bg-slate-100'}`}
+                                  >
+                                    <i className={`fas ${isSembako ? 'fa-check-circle text-white' : 'fa-circle'}`}></i> SEMBAKO
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                    </div>
+
+                  </div>
+                )}
+
               </div>
             )}
 
-            {/* VIEW: FORM REGISTRASI DINAMIS */}
             {view === 'form_kpm' && (
               <div className="animate-slide card-modern p-6 md:p-8">
                 <div className="flex justify-between items-center mb-6 pb-4 border-b-2 border-slate-100">
@@ -499,7 +595,6 @@
             )}
           </div>
 
-          {/* NAVIGASI BAWAH (DIPERBAIKI AGAR INSTAN) */}
           <div className="fixed bottom-0 left-0 w-full bg-white border-t border-slate-200 z-50 shadow-[0_-10px_25px_-5px_rgba(0,0,0,0.1)] pb-safe">
             <div className="max-w-2xl mx-auto flex justify-around px-2 py-3">
               {[ { id: 'dashboard', icon: 'fa-chart-pie', label: 'Beranda' }, { id: 'data', icon: 'fa-address-book', label: 'Data KPM' }, { id: 'monitoring', icon: 'fa-tasks', label: 'Monitoring' }].map((item) => (

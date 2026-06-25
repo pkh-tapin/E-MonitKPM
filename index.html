@@ -34,7 +34,7 @@
   <script type="text/babel">
     const { useState, useEffect, useMemo, useRef } = React;
 
-    // === GANTI DENGAN URL DEPLOYMENT BARU ANDA ===
+    // URL Deployment GAS (Dipersatukan dalam 1 baris utuh tanpa karakter enter/spasi tersembunyi)
     const GAS_URL = "https://script.google.com/macros/s/AKfycby_7rAmJQh9CM9Zcl0eqmApjga1JtTwX410VcrRDURnZdSARCdtS247saQeK-raJkNF/exec"; 
 
     function App() {
@@ -54,7 +54,7 @@
 
       // State Form Monitoring
       const [monKpm, setMonKpm] = useState('');
-      const [monJenis, setMonJenis] = useState('penyaluran'); // penyaluran | pertemuan
+      const [monJenis, setMonJenis] = useState('penyaluran'); 
       const [monTahap, setMonTahap] = useState('Tahap 1');
       const [monBulan, setMonBulan] = useState('Januari');
       const [monStatus, setMonStatus] = useState('Sudah Transaksi');
@@ -79,7 +79,7 @@
         try {
           const res = await fetch(GAS_URL, {
             method: 'POST',
-            // Gunakan text/plain untuk bypass CORS preflight di GAS
+            redirect: 'follow',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
             body: JSON.stringify(payload)
           });
@@ -88,11 +88,11 @@
             showToast(result.message, 'success');
             return true;
           } else {
-            showToast(result.message, 'error');
+            showToast(result.message || 'Gagal menyimpan', 'error');
             return false;
           }
         } catch (err) {
-          showToast("Koneksi gagal", 'error');
+          showToast("Koneksi ke server gagal", 'error');
           return false;
         } finally {
           setIsLoading(false);
@@ -102,10 +102,13 @@
       const fetchData = async () => {
         setIsLoading(true);
         try {
-          const response = await fetch(`${GAS_URL}?action=get_kpm_data`);
+          const response = await fetch(`${GAS_URL}?action=get_kpm_data`, {
+            method: 'GET',
+            redirect: 'follow',
+            cache: 'no-store'
+          });
           const json = await response.json();
           if (json.data) {
-            // Normalisasi key dari Spreadsheet (bisa diubah sesuai header asli)
             const formatted = json.data.map(item => ({
               rowIndex: item.rowIndex,
               id: item.ID || item.ID_KPM || item['ID KPM'] || item.NIK || '-',
@@ -119,15 +122,18 @@
             }));
             setKpmData(formatted);
           }
-        } catch (e) { showToast('Gagal memuat data dari Spreadsheet', 'error'); } 
-        finally { setIsLoading(false); }
+        } catch (e) { 
+          showToast('Gagal memuat data Spreadsheet', 'error'); 
+        } finally { 
+          setIsLoading(false); 
+        }
       };
 
       // HANDLING FILE UPLOAD
       const handleFileChange = (e) => {
         const file = e.target.files[0];
         if(!file) return;
-        if(file.size > 2000000) return showToast("Maksimal ukuran foto 2MB", "error"); // Batas 2MB agar aman di GAS
+        if(file.size > 2000000) return showToast("Maksimal ukuran foto 2MB", "error"); 
 
         const reader = new FileReader();
         reader.onloadend = () => {
@@ -156,6 +162,12 @@
         if(!confirm("Yakin ingin menghapus KPM ini?")) return;
         const success = await callAPI({ action: "delete_kpm", id: rowIndex });
         if(success) fetchData();
+      };
+
+      // RESET & SWITCH MONITORING JENIS
+      const handleSwitchMonJenis = (jenis) => {
+        setMonJenis(jenis);
+        setMonStatus(jenis === 'penyaluran' ? 'Sudah Transaksi' : 'Hadir');
       };
 
       // MONITORING ACTION
@@ -386,8 +398,8 @@
             {view === 'monitoring' && (
               <div className="animate-slideUp space-y-5">
                 <div className="flex bg-slate-200/50 dark:bg-slate-800 p-1 rounded-xl mb-4">
-                  <button onClick={() => setMonJenis('penyaluran')} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${monJenis === 'penyaluran' ? 'bg-white dark:bg-slate-700 shadow text-blue-600 dark:text-blue-400' : 'text-slate-500'}`}>Penyaluran</button>
-                  <button onClick={() => setMonJenis('pertemuan')} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${monJenis === 'pertemuan' ? 'bg-white dark:bg-slate-700 shadow text-orange-600 dark:text-orange-400' : 'text-slate-500'}`}>Pertemuan P2K2</button>
+                  <button onClick={() => handleSwitchMonJenis('penyaluran')} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${monJenis === 'penyaluran' ? 'bg-white dark:bg-slate-700 shadow text-blue-600 dark:text-blue-400' : 'text-slate-500'}`}>Penyaluran</button>
+                  <button onClick={() => handleSwitchMonJenis('pertemuan')} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${monJenis === 'pertemuan' ? 'bg-white dark:bg-slate-700 shadow text-orange-600 dark:text-orange-400' : 'text-slate-500'}`}>Pertemuan P2K2</button>
                 </div>
 
                 <div className="glass-card p-6 rounded-3xl border-t-4 border-t-blue-500">
@@ -456,4 +468,3 @@
   </script>
 </body>
 </html>
-0

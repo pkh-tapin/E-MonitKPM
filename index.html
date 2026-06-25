@@ -1,422 +1,394 @@
-import React, { useState, useEffect, useMemo } from 'react';
-
-// URL Google Apps Script Anda (Terkunci ke Database Spreadsheet Anda)
-const GAS_URL = "https://script.google.com/macros/s/AKfycby_7rAmJQh9CM9Zcl0eqmApjga1JtTwX410VcrRDURnZdSARCdtS247saQeK-raJkNF/exec"; 
-
-export default function App() {
-  // Inject FontAwesome & Custom Styles on Mount
-  useEffect(() => {
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
-    document.head.appendChild(link);
-
-    return () => { document.head.removeChild(link); };
-  }, []);
-
-  // Application States
-  const [view, setView] = useState('dashboard');
-  const [kpmData, setKpmData] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
-  const [searchQuery, setSearchQuery] = useState('');
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>E-Monitoring PKH</title>
   
-  // Filter & Settings States
-  const [lockedKecamatan, setLockedKecamatan] = useState(localStorage.getItem('locked_kecamatan') || '');
-  const [filterKecamatan, setFilterKecamatan] = useState(localStorage.getItem('locked_kecamatan') || '');
-  const [filterDesa, setFilterDesa] = useState('');
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
-  // Data Fetching (Real-time fetch dari Spreadsheet via GAS)
-  useEffect(() => {
-    fetchData();
-  }, []);
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body class="bg-slate-50">
+  
+  <div id="root"></div>
 
-  const fetchData = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch(`${GAS_URL}?action=get_kpm_data`);
-      const json = await response.json();
+  <script type="text/babel">
+    const { useState, useEffect, useMemo } = React;
+
+    // URL Google Apps Script Anda (Terkunci ke Database Spreadsheet)
+    const GAS_URL = "https://script.google.com/macros/s/AKfycby_7rAmJQh9CM9Zcl0eqmApjga1JtTwX410VcrRDURnZdSARCdtS247saQeK-raJkNF/exec"; 
+
+    function App() {
+      // Application States
+      const [view, setView] = useState('dashboard');
+      const [kpmData, setKpmData] = useState([]);
+      const [isLoading, setIsLoading] = useState(true);
+      const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+      const [searchQuery, setSearchQuery] = useState('');
       
-      if (json.data) {
-        // Memformat data yang masuk agar sesuai dengan UI Aplikasi
-        // Mendukung berbagai variasi nama kolom dari Spreadsheet (case-insensitive fallback)
-        const formattedData = json.data.map(item => ({
-          id: item.ID_KPM || item['ID KPM'] || item.id || item.NIK || '-',
-          nama: item.Nama_Pengurus || item['NAMA PENGURUS'] || item.NAMA || item.nama || '-',
-          kecamatan: item.Kecamatan || item.KECAMATAN || item.kecamatan || '-',
-          desa: item.Desa || item.DESA || item.desa || item.Kelurahan || '-',
-          kategori: item.Jumlah_Komponen || item.Kategori || item.KATEGORI || item.kategori || '-',
-          status: item.Status || 'Belum Transaksi'
-        }));
-        
-        setKpmData(formattedData);
-        showToast('Data berhasil dimuat dari Spreadsheet', 'success');
-      } else {
-        showToast('Data kosong atau format salah', 'error');
-      }
-    } catch (error) {
-      showToast('Gagal terhubung ke Google Script', 'error');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      // Filter & Settings States
+      const [lockedKecamatan, setLockedKecamatan] = useState(localStorage.getItem('locked_kecamatan') || '');
+      const [filterKecamatan, setFilterKecamatan] = useState(localStorage.getItem('locked_kecamatan') || '');
+      const [filterDesa, setFilterDesa] = useState('');
+      
+      // Data Fetching (Real-time fetch dari Spreadsheet via GAS)
+      useEffect(() => {
+        fetchData();
+      }, []);
 
-  // Toast Handler
-  const showToast = (message, type = 'success') => {
-    setToast({ show: true, message, type });
-    setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
-  };
-
-  // Memoized Filter Logic
-  const uniqueKecamatan = useMemo(() => [...new Set(kpmData.map(item => item.kecamatan))], [kpmData]);
-  const uniqueDesa = useMemo(() => {
-    if (!filterKecamatan) return [];
-    return [...new Set(kpmData.filter(item => item.kecamatan === filterKecamatan).map(item => item.desa))];
-  }, [kpmData, filterKecamatan]);
-
-  const filteredData = useMemo(() => {
-    return kpmData.filter(item => {
-      const matchKecamatan = filterKecamatan ? item.kecamatan === filterKecamatan : true;
-      const matchDesa = filterDesa ? item.desa === filterDesa : true;
-      const matchSearch = searchQuery ? 
-        (item.nama.toLowerCase().includes(searchQuery.toLowerCase()) || item.id.includes(searchQuery)) 
-        : true;
-      return matchKecamatan && matchDesa && matchSearch;
-    });
-  }, [kpmData, filterKecamatan, filterDesa, searchQuery]);
-
-  // Handle Locking Kecamatan
-  const handleLockKecamatan = (kecamatan) => {
-    setLockedKecamatan(kecamatan);
-    setFilterKecamatan(kecamatan);
-    setFilterDesa('');
-    localStorage.setItem('locked_kecamatan', kecamatan);
-    showToast(`Kecamatan dikunci ke: ${kecamatan || 'Semua'}`, 'success');
-  };
-
-  // Simulated Save Action (Akan disambung dengan POST GAS Anda nantinya)
-  const handleSave = (actionName) => {
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      showToast(`${actionName} berhasil disimpan realtime!`, 'success');
-    }, 600);
-  };
-
-  return (
-    <div className="max-w-[480px] mx-auto min-h-screen bg-slate-50 shadow-2xl relative pb-20 font-sans overflow-x-hidden">
-      {/* --- INJECTED STYLES FOR GLOSSY 3D EFFECTS --- */}
-      <style>{`
-        .glass-card {
-          background: rgba(255, 255, 255, 0.9);
-          backdrop-filter: blur(10px);
-          border: 1px solid rgba(255, 255, 255, 1);
-          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
-          border-radius: 1rem;
+      const fetchData = async () => {
+        setIsLoading(true);
+        try {
+          const response = await fetch(`${GAS_URL}?action=get_kpm_data`);
+          const json = await response.json();
+          
+          if (json.data) {
+            const formattedData = json.data.map(item => ({
+              id: item.ID_KPM || item['ID KPM'] || item.id || item.NIK || '-',
+              nama: item.Nama_Pengurus || item['NAMA PENGURUS'] || item.NAMA || item.nama || '-',
+              kecamatan: item.Kecamatan || item.KECAMATAN || item.kecamatan || '-',
+              desa: item.Desa || item.DESA || item.desa || item.Kelurahan || '-',
+              kategori: item.Jumlah_Komponen || item.Kategori || item.KATEGORI || item.kategori || '-',
+              status: item.Status || 'Belum Transaksi'
+            }));
+            
+            setKpmData(formattedData);
+            showToast('Data berhasil dimuat dari Spreadsheet', 'success');
+          } else {
+            showToast('Data kosong atau format salah', 'error');
+          }
+        } catch (error) {
+          showToast('Gagal terhubung ke Google Script', 'error');
+        } finally {
+          setIsLoading(false);
         }
-        .header-glossy {
-          background: linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%);
-          box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4), inset 0 -2px 10px rgba(0,0,0,0.1);
-          position: relative; overflow: hidden;
-        }
-        .header-glossy::after {
-          content: ''; position: absolute; top: 0; left: -150%; width: 200%; height: 100%;
-          background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0) 100%);
-          transform: skewX(-20deg); animation: shine 6s infinite;
-        }
-        .btn-orange-glossy {
-          background: linear-gradient(135deg, #ea580c 0%, #f97316 100%);
-          box-shadow: 0 4px 10px rgba(249, 115, 22, 0.4), inset 0 2px 0 rgba(255,255,255,0.3);
-          transition: all 0.2s; border: none;
-        }
-        .btn-orange-glossy:active { transform: translateY(2px); box-shadow: 0 2px 5px rgba(249, 115, 22, 0.4); }
-        .btn-blue-glossy {
-          background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
-          box-shadow: 0 4px 10px rgba(59, 130, 246, 0.4), inset 0 2px 0 rgba(255,255,255,0.3);
-          transition: all 0.2s; border: none;
-        }
-        .btn-blue-glossy:active { transform: translateY(2px); }
-        .input-glossy {
-          background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 0.75rem; padding: 0.75rem 1rem; width: 100%; outline: none; transition: all 0.3s;
-        }
-        .input-glossy:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); background: white; }
-        @keyframes shine { 0% { left: -150%; } 100% { left: 150%; } }
-        @keyframes slideDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .animate-slideDown { animation: slideDown 0.3s ease-out forwards; }
-        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-        .animate-fadeIn { animation: fadeIn 0.3s ease-out forwards; }
-      `}</style>
+      };
 
-      {/* --- TOAST NOTIFICATION --- */}
-      {toast.show && (
-        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[100] w-[90%] max-w-[400px] animate-slideDown">
-          <div className={`flex items-center p-4 rounded-2xl shadow-2xl text-white ${toast.type === 'success' ? 'bg-gradient-to-r from-emerald-500 to-green-500' : 'bg-gradient-to-r from-red-500 to-rose-500'}`}>
-            <i className={`fas ${toast.type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle'} text-xl mr-3`}></i>
-            <span className="font-bold text-sm">{toast.message}</span>
-          </div>
-        </div>
-      )}
+      // Toast Handler
+      const showToast = (message, type = 'success') => {
+        setToast({ show: true, message, type });
+        setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
+      };
 
-      {/* --- LOADING OVERLAY --- */}
-      {isLoading && (
-        <div className="fixed inset-0 z-[90] bg-white/60 backdrop-blur-sm flex items-center justify-center">
-          <div className="bg-white p-6 rounded-3xl shadow-xl flex flex-col items-center animate-fadeIn border border-blue-100">
-            <div className="w-12 h-12 border-4 border-blue-200 border-t-orange-500 rounded-full animate-spin mb-3"></div>
-            <p className="text-blue-900 font-bold text-sm">Memproses Data...</p>
-          </div>
-        </div>
-      )}
+      // Memoized Filter Logic
+      const uniqueKecamatan = useMemo(() => [...new Set(kpmData.map(item => item.kecamatan))], [kpmData]);
+      const uniqueDesa = useMemo(() => {
+        if (!filterKecamatan) return [];
+        return [...new Set(kpmData.filter(item => item.kecamatan === filterKecamatan).map(item => item.desa))];
+      }, [kpmData, filterKecamatan]);
 
-      {/* --- HEADER --- */}
-      <div className="header-glossy p-6 pb-8 rounded-b-[2rem]">
-        <div className="flex justify-between items-center mb-5">
-          <div>
-            <p className="text-blue-200 text-xs font-bold tracking-widest uppercase mb-1">E-Monitoring PKH</p>
-            <h1 className="text-2xl font-extrabold text-white">Data BNBA 2026</h1>
-          </div>
-          <button onClick={() => setView('settings')} className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-lg border-2 border-orange-500 relative overflow-hidden group">
-             <i className="fas fa-cog text-blue-600 group-hover:rotate-90 transition duration-300"></i>
-             {lockedKecamatan && <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></span>}
-          </button>
-        </div>
-        <div className="relative z-10">
-          <i className="fas fa-search absolute left-4 top-3.5 text-blue-300"></i>
-          <input 
-            type="text" 
-            placeholder="Cari Nama / ID KPM..." 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-blue-900/40 border border-blue-400/50 text-white placeholder-blue-200 rounded-full py-3 pl-12 pr-4 outline-none focus:bg-blue-800/60 transition shadow-inner font-medium text-sm backdrop-blur-md"
-          />
-        </div>
-      </div>
+      const filteredData = useMemo(() => {
+        return kpmData.filter(item => {
+          const matchKecamatan = filterKecamatan ? item.kecamatan === filterKecamatan : true;
+          const matchDesa = filterDesa ? item.desa === filterDesa : true;
+          const matchSearch = searchQuery ? 
+            (item.nama.toLowerCase().includes(searchQuery.toLowerCase()) || item.id.includes(searchQuery)) 
+            : true;
+          return matchKecamatan && matchDesa && matchSearch;
+        });
+      }, [kpmData, filterKecamatan, filterDesa, searchQuery]);
 
-      {/* --- MAIN CONTENT AREA --- */}
-      <div className="p-5 relative -mt-5 z-10 space-y-5">
+      // Handle Locking Kecamatan
+      const handleLockKecamatan = (kecamatan) => {
+        setLockedKecamatan(kecamatan);
+        setFilterKecamatan(kecamatan);
+        setFilterDesa('');
+        localStorage.setItem('locked_kecamatan', kecamatan);
+        showToast(`Kecamatan dikunci ke: ${kecamatan || 'Semua'}`, 'success');
+      };
 
-        {/* VIEW: DASHBOARD */}
-        {view === 'dashboard' && (
-          <div className="animate-fadeIn space-y-5">
-            {/* Filter Info Card */}
-            <div className="glass-card p-4 border-l-4 border-l-blue-500 flex justify-between items-center">
-               <div>
-                 <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Cakupan Wilayah</p>
-                 <h3 className="font-bold text-blue-900 text-sm">
-                   {lockedKecamatan ? `Kec. ${lockedKecamatan}` : 'Semua Kecamatan'}
-                 </h3>
-               </div>
-               <button onClick={() => setView('settings')} className="text-xs bg-orange-100 text-orange-600 px-3 py-1.5 rounded-lg font-bold">
-                 Ubah <i className="fas fa-edit ml-1"></i>
-               </button>
-            </div>
+      const handleSave = (actionName) => {
+        setIsLoading(true);
+        setTimeout(() => {
+          setIsLoading(false);
+          showToast(`${actionName} berhasil disimpan realtime!`, 'success');
+        }, 600);
+      };
 
-            {/* Stats Grid */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="glass-card p-5 text-center relative overflow-hidden">
-                <div className="absolute -right-4 -top-4 w-16 h-16 bg-blue-50 rounded-full opacity-50"></div>
-                <div className="w-12 h-12 mx-auto bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-3 shadow-inner">
-                  <i className="fas fa-users text-xl"></i>
-                </div>
-                <h3 className="text-3xl font-extrabold text-gray-800">{filteredData.length}</h3>
-                <p className="text-xs text-gray-500 font-bold mt-1 uppercase tracking-wide">Total KPM</p>
-              </div>
-              <div className="glass-card p-5 text-center relative overflow-hidden">
-                <div className="absolute -right-4 -top-4 w-16 h-16 bg-orange-50 rounded-full opacity-50"></div>
-                <div className="w-12 h-12 mx-auto bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mb-3 shadow-inner">
-                  <i className="fas fa-check-double text-xl"></i>
-                </div>
-                <h3 className="text-3xl font-extrabold text-gray-800">
-                  {filteredData.filter(d => d.status === 'Sudah Transaksi').length}
-                </h3>
-                <p className="text-xs text-gray-500 font-bold mt-1 uppercase tracking-wide">Selesai Salur</p>
+      return (
+        <div className="max-w-[480px] mx-auto min-h-screen bg-slate-50 shadow-2xl relative pb-20 font-sans overflow-x-hidden">
+          <style>{`
+            .glass-card { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 1); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); border-radius: 1rem; }
+            .header-glossy { background: linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%); box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4), inset 0 -2px 10px rgba(0,0,0,0.1); position: relative; overflow: hidden; }
+            .header-glossy::after { content: ''; position: absolute; top: 0; left: -150%; width: 200%; height: 100%; background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0) 100%); transform: skewX(-20deg); animation: shine 6s infinite; }
+            .btn-orange-glossy { background: linear-gradient(135deg, #ea580c 0%, #f97316 100%); box-shadow: 0 4px 10px rgba(249, 115, 22, 0.4), inset 0 2px 0 rgba(255,255,255,0.3); transition: all 0.2s; border: none; }
+            .btn-orange-glossy:active { transform: translateY(2px); box-shadow: 0 2px 5px rgba(249, 115, 22, 0.4); }
+            .btn-blue-glossy { background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); box-shadow: 0 4px 10px rgba(59, 130, 246, 0.4), inset 0 2px 0 rgba(255,255,255,0.3); transition: all 0.2s; border: none; }
+            .btn-blue-glossy:active { transform: translateY(2px); }
+            .input-glossy { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 0.75rem; padding: 0.75rem 1rem; width: 100%; outline: none; transition: all 0.3s; }
+            .input-glossy:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); background: white; }
+            @keyframes shine { 0% { left: -150%; } 100% { left: 150%; } }
+            @keyframes slideDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+            .animate-slideDown { animation: slideDown 0.3s ease-out forwards; }
+            @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+            .animate-fadeIn { animation: fadeIn 0.3s ease-out forwards; }
+          `}</style>
+
+          {toast.show && (
+            <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[100] w-[90%] max-w-[400px] animate-slideDown">
+              <div className={`flex items-center p-4 rounded-2xl shadow-2xl text-white ${toast.type === 'success' ? 'bg-gradient-to-r from-emerald-500 to-green-500' : 'bg-gradient-to-r from-red-500 to-rose-500'}`}>
+                <i className={`fas ${toast.type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle'} text-xl mr-3`}></i>
+                <span className="font-bold text-sm">{toast.message}</span>
               </div>
             </div>
+          )}
 
-            {/* Quick Actions */}
-            <h2 className="text-sm font-bold text-gray-800 ml-1 flex items-center"><i className="fas fa-bolt text-orange-500 mr-2"></i> Menu Cepat</h2>
-            <div className="glass-card p-2">
-              <button onClick={() => setView('data')} className="w-full flex items-center justify-between p-4 rounded-xl hover:bg-slate-50 transition active:scale-95">
-                <div className="flex items-center">
-                  <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mr-4"><i className="fas fa-database"></i></div>
-                  <div className="text-left"><h4 className="font-bold text-gray-800 text-sm">Database Spreadsheet</h4><p className="text-xs text-gray-500">Lihat & Filter Data KPM</p></div>
-                </div>
-                <i className="fas fa-chevron-right text-gray-300"></i>
-              </button>
-              <div className="h-px bg-gray-100 mx-4"></div>
-              <button onClick={() => setView('monitoring')} className="w-full flex items-center justify-between p-4 rounded-xl hover:bg-slate-50 transition active:scale-95">
-                <div className="flex items-center">
-                  <div className="w-10 h-10 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mr-4"><i className="fas fa-clipboard-check"></i></div>
-                  <div className="text-left"><h4 className="font-bold text-gray-800 text-sm">Input Monitoring</h4><p className="text-xs text-gray-500">P2K2 & Transaksi</p></div>
-                </div>
-                <i className="fas fa-chevron-right text-gray-300"></i>
+          {isLoading && (
+            <div className="fixed inset-0 z-[90] bg-white/60 backdrop-blur-sm flex items-center justify-center">
+              <div className="bg-white p-6 rounded-3xl shadow-xl flex flex-col items-center animate-fadeIn border border-blue-100">
+                <div className="w-12 h-12 border-4 border-blue-200 border-t-orange-500 rounded-full animate-spin mb-3"></div>
+                <p className="text-blue-900 font-bold text-sm">Memproses Data...</p>
+              </div>
+            </div>
+          )}
+
+          <div className="header-glossy p-6 pb-8 rounded-b-[2rem]">
+            <div className="flex justify-between items-center mb-5">
+              <div>
+                <p className="text-blue-200 text-xs font-bold tracking-widest uppercase mb-1">E-Monitoring PKH</p>
+                <h1 className="text-2xl font-extrabold text-white">Data BNBA 2026</h1>
+              </div>
+              <button onClick={() => setView('settings')} className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-lg border-2 border-orange-500 relative overflow-hidden group">
+                 <i className="fas fa-cog text-blue-600 group-hover:rotate-90 transition duration-300"></i>
+                 {lockedKecamatan && <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></span>}
               </button>
             </div>
-          </div>
-        )}
-
-        {/* VIEW: DATA KPM & FILTER */}
-        {view === 'data' && (
-          <div className="animate-fadeIn space-y-4">
-            {/* Filter Controls */}
-            <div className="glass-card p-4 space-y-3">
-              <div className="flex justify-between items-center mb-1">
-                <h2 className="font-bold text-blue-900 text-sm"><i className="fas fa-filter mr-2 text-orange-500"></i>Filter Data</h2>
-                <button onClick={fetchData} className="text-xs font-bold text-blue-600"><i className="fas fa-sync-alt mr-1"></i> Refresh</button>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1 block">Kecamatan</label>
-                  <select 
-                    value={filterKecamatan} 
-                    onChange={(e) => { setFilterKecamatan(e.target.value); setFilterDesa(''); }}
-                    className="input-glossy text-sm py-2 px-3 font-medium"
-                    disabled={!!lockedKecamatan} // Disable if locked
-                  >
-                    <option value="">Semua Kecamatan</option>
-                    {uniqueKecamatan.map(kec => <option key={kec} value={kec}>{kec}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1 block">Desa / Kelurahan</label>
-                  <select 
-                    value={filterDesa} 
-                    onChange={(e) => setFilterDesa(e.target.value)}
-                    className="input-glossy text-sm py-2 px-3 font-medium"
-                    disabled={!filterKecamatan}
-                  >
-                    <option value="">Semua Desa</option>
-                    {uniqueDesa.map(desa => <option key={desa} value={desa}>{desa}</option>)}
-                  </select>
-                </div>
-              </div>
+            <div className="relative z-10">
+              <i className="fas fa-search absolute left-4 top-3.5 text-blue-300"></i>
+              <input 
+                type="text" 
+                placeholder="Cari Nama / ID KPM..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-blue-900/40 border border-blue-400/50 text-white placeholder-blue-200 rounded-full py-3 pl-12 pr-4 outline-none focus:bg-blue-800/60 transition shadow-inner font-medium text-sm backdrop-blur-md"
+              />
             </div>
+          </div>
 
-            {/* List Data */}
-            <div className="space-y-3">
-              {filteredData.length === 0 ? (
-                <div className="text-center p-8 bg-white rounded-2xl border border-dashed border-gray-300">
-                  <i className="fas fa-folder-open text-4xl text-gray-300 mb-3"></i>
-                  <p className="text-gray-500 text-sm font-bold">Data tidak ditemukan</p>
+          <div className="p-5 relative -mt-5 z-10 space-y-5">
+            {view === 'dashboard' && (
+              <div className="animate-fadeIn space-y-5">
+                <div className="glass-card p-4 border-l-4 border-l-blue-500 flex justify-between items-center">
+                   <div>
+                     <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Cakupan Wilayah</p>
+                     <h3 className="font-bold text-blue-900 text-sm">
+                       {lockedKecamatan ? `Kec. ${lockedKecamatan}` : 'Semua Kecamatan'}
+                     </h3>
+                   </div>
+                   <button onClick={() => setView('settings')} className="text-xs bg-orange-100 text-orange-600 px-3 py-1.5 rounded-lg font-bold">
+                     Ubah <i className="fas fa-edit ml-1"></i>
+                   </button>
                 </div>
-              ) : (
-                filteredData.map((item, index) => (
-                  <div key={index} className="glass-card p-4 flex flex-col hover:border-blue-300 transition cursor-pointer" onClick={() => setView('monitoring')}>
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="flex items-center">
-                        <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-blue-50 rounded-full border border-blue-200 flex items-center justify-center text-blue-600 mr-3 font-bold text-sm shadow-sm">
-                          {item.nama.charAt(0)}
-                        </div>
-                        <div>
-                          <h4 className="font-extrabold text-gray-800 text-sm">{item.nama}</h4>
-                          <p className="text-[11px] text-gray-500 font-medium">ID: <span className="text-blue-600">{item.id}</span></p>
-                        </div>
-                      </div>
-                      <span className={`text-[10px] px-2 py-1 rounded-md font-bold uppercase tracking-wider ${item.status === 'Sudah Transaksi' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
-                        {item.status === 'Sudah Transaksi' ? <i className="fas fa-check mr-1"></i> : <i className="fas fa-times mr-1"></i>}
-                        {item.status.split(' ')[0]}
-                      </span>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="glass-card p-5 text-center relative overflow-hidden">
+                    <div className="absolute -right-4 -top-4 w-16 h-16 bg-blue-50 rounded-full opacity-50"></div>
+                    <div className="w-12 h-12 mx-auto bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-3 shadow-inner">
+                      <i className="fas fa-users text-xl"></i>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 mt-1 pt-3 border-t border-gray-100">
-                       <div>
-                         <p className="text-[10px] text-gray-400 font-bold uppercase">Wilayah</p>
-                         <p className="text-xs text-gray-700 font-semibold">{item.desa}</p>
-                       </div>
-                       <div className="text-right">
-                         <p className="text-[10px] text-gray-400 font-bold uppercase">Komponen</p>
-                         <p className="text-xs text-orange-600 font-bold">{item.kategori}</p>
-                       </div>
+                    <h3 className="text-3xl font-extrabold text-gray-800">{filteredData.length}</h3>
+                    <p className="text-xs text-gray-500 font-bold mt-1 uppercase tracking-wide">Total KPM</p>
+                  </div>
+                  <div className="glass-card p-5 text-center relative overflow-hidden">
+                    <div className="absolute -right-4 -top-4 w-16 h-16 bg-orange-50 rounded-full opacity-50"></div>
+                    <div className="w-12 h-12 mx-auto bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mb-3 shadow-inner">
+                      <i className="fas fa-check-double text-xl"></i>
+                    </div>
+                    <h3 className="text-3xl font-extrabold text-gray-800">
+                      {filteredData.filter(d => d.status === 'Sudah Transaksi').length}
+                    </h3>
+                    <p className="text-xs text-gray-500 font-bold mt-1 uppercase tracking-wide">Selesai Salur</p>
+                  </div>
+                </div>
+
+                <h2 className="text-sm font-bold text-gray-800 ml-1 flex items-center"><i className="fas fa-bolt text-orange-500 mr-2"></i> Menu Cepat</h2>
+                <div className="glass-card p-2">
+                  <button onClick={() => setView('data')} className="w-full flex items-center justify-between p-4 rounded-xl hover:bg-slate-50 transition active:scale-95">
+                    <div className="flex items-center">
+                      <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mr-4"><i className="fas fa-database"></i></div>
+                      <div className="text-left"><h4 className="font-bold text-gray-800 text-sm">Database Spreadsheet</h4><p className="text-xs text-gray-500">Lihat & Filter Data KPM</p></div>
+                    </div>
+                    <i className="fas fa-chevron-right text-gray-300"></i>
+                  </button>
+                  <div className="h-px bg-gray-100 mx-4"></div>
+                  <button onClick={() => setView('monitoring')} className="w-full flex items-center justify-between p-4 rounded-xl hover:bg-slate-50 transition active:scale-95">
+                    <div className="flex items-center">
+                      <div className="w-10 h-10 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mr-4"><i className="fas fa-clipboard-check"></i></div>
+                      <div className="text-left"><h4 className="font-bold text-gray-800 text-sm">Input Monitoring</h4><p className="text-xs text-gray-500">P2K2 & Transaksi</p></div>
+                    </div>
+                    <i className="fas fa-chevron-right text-gray-300"></i>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {view === 'data' && (
+              <div className="animate-fadeIn space-y-4">
+                <div className="glass-card p-4 space-y-3">
+                  <div className="flex justify-between items-center mb-1">
+                    <h2 className="font-bold text-blue-900 text-sm"><i className="fas fa-filter mr-2 text-orange-500"></i>Filter Data</h2>
+                    <button onClick={fetchData} className="text-xs font-bold text-blue-600"><i className="fas fa-sync-alt mr-1"></i> Refresh</button>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1 block">Kecamatan</label>
+                      <select 
+                        value={filterKecamatan} 
+                        onChange={(e) => { setFilterKecamatan(e.target.value); setFilterDesa(''); }}
+                        className="input-glossy text-sm py-2 px-3 font-medium"
+                        disabled={!!lockedKecamatan}
+                      >
+                        <option value="">Semua Kecamatan</option>
+                        {uniqueKecamatan.map(kec => <option key={kec} value={kec}>{kec}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1 block">Desa / Kelurahan</label>
+                      <select 
+                        value={filterDesa} 
+                        onChange={(e) => setFilterDesa(e.target.value)}
+                        className="input-glossy text-sm py-2 px-3 font-medium"
+                        disabled={!filterKecamatan}
+                      >
+                        <option value="">Semua Desa</option>
+                        {uniqueDesa.map(desa => <option key={desa} value={desa}>{desa}</option>)}
+                      </select>
                     </div>
                   </div>
-                ))
-              )}
-            </div>
-          </div>
-        )}
+                </div>
 
-        {/* VIEW: SETTINGS (KUNCI KECAMATAN) */}
-        {view === 'settings' && (
-          <div className="animate-fadeIn space-y-4">
-            <h2 className="font-bold text-blue-900 text-lg mb-2"><i className="fas fa-cogs mr-2 text-orange-500"></i>Pengaturan Aplikasi</h2>
-            
-            <div className="glass-card p-5">
-               <h3 className="font-bold text-gray-800 text-sm mb-1">Kunci Wilayah (Lock Kecamatan)</h3>
-               <p className="text-xs text-gray-500 mb-4">Pilih kecamatan agar aplikasi hanya menampilkan data wilayah tugas Anda. Ini akan mempercepat performa.</p>
-               
-               <select 
-                  value={lockedKecamatan} 
-                  onChange={(e) => handleLockKecamatan(e.target.value)}
-                  className="input-glossy text-sm mb-4 font-bold text-blue-900"
-                >
-                  <option value="">-- Jangan Dikunci (Tampilkan Semua) --</option>
-                  {uniqueKecamatan.map(kec => <option key={kec} value={kec}>{kec}</option>)}
-                </select>
-
-                <button onClick={() => setView('dashboard')} className="btn-blue-glossy w-full py-3 rounded-xl font-bold text-sm text-white shadow-lg flex items-center justify-center">
-                  <i className="fas fa-save mr-2"></i> Simpan Pengaturan
-                </button>
-            </div>
-          </div>
-        )}
-
-        {/* VIEW: MONITORING (Mock Detail Input) */}
-        {view === 'monitoring' && (
-          <div className="animate-fadeIn space-y-4">
-            <h2 className="font-bold text-blue-900 text-lg mb-2"><i className="fas fa-edit mr-2 text-orange-500"></i>Input Monitoring</h2>
-            <div className="glass-card p-5 border-t-4 border-t-orange-500">
-              <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1">Pilih KPM</label>
-              <select className="input-glossy text-sm font-bold text-gray-800 mb-4">
-                {filteredData.slice(0,10).map(item => (
-                  <option key={item.id} value={item.id}>{item.nama} - {item.desa}</option>
-                ))}
-              </select>
-
-              <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-2">Kehadiran P2K2 (Bulan)</label>
-              <div className="grid grid-cols-4 gap-2 mb-5">
-                {[1,2,3,4].map(bln => (
-                  <button key={bln} onClick={() => handleSave(`Absen P2K2 Bulan ${bln}`)} className={`py-2 rounded-lg text-xs font-bold transition active:scale-95 ${bln === 1 ? 'bg-gradient-to-b from-emerald-400 to-green-500 text-white shadow-md' : 'bg-slate-100 text-slate-500 border border-slate-200'}`}>
-                    {bln === 1 && <i className="fas fa-check mr-1"></i>} B {bln}
-                  </button>
-                ))}
+                <div className="space-y-3">
+                  {filteredData.length === 0 ? (
+                    <div className="text-center p-8 bg-white rounded-2xl border border-dashed border-gray-300">
+                      <i className="fas fa-folder-open text-4xl text-gray-300 mb-3"></i>
+                      <p className="text-gray-500 text-sm font-bold">Data tidak ditemukan</p>
+                    </div>
+                  ) : (
+                    filteredData.map((item, index) => (
+                      <div key={index} className="glass-card p-4 flex flex-col hover:border-blue-300 transition cursor-pointer" onClick={() => setView('monitoring')}>
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="flex items-center">
+                            <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-blue-50 rounded-full border border-blue-200 flex items-center justify-center text-blue-600 mr-3 font-bold text-sm shadow-sm">
+                              {item.nama.charAt(0)}
+                            </div>
+                            <div>
+                              <h4 className="font-extrabold text-gray-800 text-sm">{item.nama}</h4>
+                              <p className="text-[11px] text-gray-500 font-medium">ID: <span className="text-blue-600">{item.id}</span></p>
+                            </div>
+                          </div>
+                          <span className={`text-[10px] px-2 py-1 rounded-md font-bold uppercase tracking-wider ${item.status === 'Sudah Transaksi' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
+                            {item.status === 'Sudah Transaksi' ? <i className="fas fa-check mr-1"></i> : <i className="fas fa-times mr-1"></i>}
+                            {item.status.split(' ')[0]}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 mt-1 pt-3 border-t border-gray-100">
+                           <div>
+                             <p className="text-[10px] text-gray-400 font-bold uppercase">Wilayah</p>
+                             <p className="text-xs text-gray-700 font-semibold">{item.desa}</p>
+                           </div>
+                           <div className="text-right">
+                             <p className="text-[10px] text-gray-400 font-bold uppercase">Komponen</p>
+                             <p className="text-xs text-orange-600 font-bold">{item.kategori}</p>
+                           </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
+            )}
 
-              <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1">Status Salur (Per 3 Bulan)</label>
-              <select className="input-glossy text-sm mb-5 font-bold">
-                <option>Tahap 1: Belum Transaksi</option>
-                <option>Tahap 1: Sudah Transaksi</option>
-              </select>
+            {view === 'settings' && (
+              <div className="animate-fadeIn space-y-4">
+                <h2 className="font-bold text-blue-900 text-lg mb-2"><i className="fas fa-cogs mr-2 text-orange-500"></i>Pengaturan Aplikasi</h2>
+                
+                <div className="glass-card p-5">
+                   <h3 className="font-bold text-gray-800 text-sm mb-1">Kunci Wilayah (Lock Kecamatan)</h3>
+                   <p className="text-xs text-gray-500 mb-4">Pilih kecamatan agar aplikasi hanya menampilkan data wilayah tugas Anda. Ini akan mempercepat performa.</p>
+                   
+                   <select 
+                      value={lockedKecamatan} 
+                      onChange={(e) => handleLockKecamatan(e.target.value)}
+                      className="input-glossy text-sm mb-4 font-bold text-blue-900"
+                    >
+                      <option value="">-- Jangan Dikunci (Tampilkan Semua) --</option>
+                      {uniqueKecamatan.map(kec => <option key={kec} value={kec}>{kec}</option>)}
+                    </select>
 
-              <button onClick={() => handleSave('Data Monitoring')} className="btn-orange-glossy w-full py-3.5 rounded-xl font-bold text-sm text-white shadow-lg flex justify-center items-center">
-                <i className="fas fa-cloud-upload-alt mr-2 text-lg"></i> Simpan ke Spreadsheet
-              </button>
-            </div>
+                    <button onClick={() => setView('dashboard')} className="btn-blue-glossy w-full py-3 rounded-xl font-bold text-sm text-white shadow-lg flex items-center justify-center">
+                      <i className="fas fa-save mr-2"></i> Simpan Pengaturan
+                    </button>
+                </div>
+              </div>
+            )}
+
+            {view === 'monitoring' && (
+              <div className="animate-fadeIn space-y-4">
+                <h2 className="font-bold text-blue-900 text-lg mb-2"><i className="fas fa-edit mr-2 text-orange-500"></i>Input Monitoring</h2>
+                <div className="glass-card p-5 border-t-4 border-t-orange-500">
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1">Pilih KPM</label>
+                  <select className="input-glossy text-sm font-bold text-gray-800 mb-4">
+                    {filteredData.slice(0,10).map(item => (
+                      <option key={item.id} value={item.id}>{item.nama} - {item.desa}</option>
+                    ))}
+                  </select>
+
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-2">Kehadiran P2K2 (Bulan)</label>
+                  <div className="grid grid-cols-4 gap-2 mb-5">
+                    {[1,2,3,4].map(bln => (
+                      <button key={bln} onClick={() => handleSave(`Absen P2K2 Bulan ${bln}`)} className={`py-2 rounded-lg text-xs font-bold transition active:scale-95 ${bln === 1 ? 'bg-gradient-to-b from-emerald-400 to-green-500 text-white shadow-md' : 'bg-slate-100 text-slate-500 border border-slate-200'}`}>
+                        {bln === 1 && <i className="fas fa-check mr-1"></i>} B {bln}
+                      </button>
+                    ))}
+                  </div>
+
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1">Status Salur (Per 3 Bulan)</label>
+                  <select className="input-glossy text-sm mb-5 font-bold">
+                    <option>Tahap 1: Belum Transaksi</option>
+                    <option>Tahap 1: Sudah Transaksi</option>
+                  </select>
+
+                  <button onClick={() => handleSave('Data Monitoring')} className="btn-orange-glossy w-full py-3.5 rounded-xl font-bold text-sm text-white shadow-lg flex justify-center items-center">
+                    <i className="fas fa-cloud-upload-alt mr-2 text-lg"></i> Simpan ke Spreadsheet
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-        )}
 
-      </div> {/* End Main Content */}
-
-      {/* --- BOTTOM NAVIGATION --- */}
-      <div className="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-[480px] bg-white/90 backdrop-blur-xl shadow-[0_-10px_40px_rgba(0,0,0,0.08)] border-t border-gray-100 rounded-t-3xl flex justify-around padding-x-2 py-3 z-50">
-        {[
-          { id: 'dashboard', icon: 'fa-home', label: 'Home' },
-          { id: 'data', icon: 'fa-database', label: 'Data' },
-          { id: 'monitoring', icon: 'fa-clipboard-check', label: 'Monitor' },
-          { id: 'settings', icon: 'fa-cogs', label: 'Seting' }
-        ].map((item) => (
-          <div 
-            key={item.id}
-            onClick={() => setView(item.id)} 
-            className={`flex flex-col items-center justify-center w-1/4 cursor-pointer transition-all duration-300 ${view === item.id ? 'text-orange-500 transform -translate-y-1' : 'text-slate-400 hover:text-blue-400'}`}
-          >
-            <div className={`relative flex items-center justify-center w-10 h-10 rounded-full mb-1 transition-all duration-300 ${view === item.id ? 'bg-orange-50' : 'bg-transparent'}`}>
-              <i className={`fas ${item.icon} text-lg`}></i>
-              {view === item.id && <div className="absolute -bottom-1 w-1.5 h-1.5 bg-orange-500 rounded-full"></div>}
-            </div>
-            <span className={`text-[10px] font-bold ${view === item.id ? 'text-orange-600' : ''}`}>{item.label}</span>
+          <div className="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-[480px] bg-white/90 backdrop-blur-xl shadow-[0_-10px_40px_rgba(0,0,0,0.08)] border-t border-gray-100 rounded-t-3xl flex justify-around px-2 py-3 z-50">
+            {[
+              { id: 'dashboard', icon: 'fa-home', label: 'Home' },
+              { id: 'data', icon: 'fa-database', label: 'Data' },
+              { id: 'monitoring', icon: 'fa-clipboard-check', label: 'Monitor' },
+              { id: 'settings', icon: 'fa-cogs', label: 'Seting' }
+            ].map((item) => (
+              <div 
+                key={item.id}
+                onClick={() => setView(item.id)} 
+                className={`flex flex-col items-center justify-center w-1/4 cursor-pointer transition-all duration-300 ${view === item.id ? 'text-orange-500 transform -translate-y-1' : 'text-slate-400 hover:text-blue-400'}`}
+              >
+                <div className={`relative flex items-center justify-center w-10 h-10 rounded-full mb-1 transition-all duration-300 ${view === item.id ? 'bg-orange-50' : 'bg-transparent'}`}>
+                  <i className={`fas ${item.icon} text-lg`}></i>
+                  {view === item.id && <div className="absolute -bottom-1 w-1.5 h-1.5 bg-orange-500 rounded-full"></div>}
+                </div>
+                <span className={`text-[10px] font-bold ${view === item.id ? 'text-orange-600' : ''}`}>{item.label}</span>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </div>
+      );
+    }
 
-    </div>
-  );
-}
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>

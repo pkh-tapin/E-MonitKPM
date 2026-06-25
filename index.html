@@ -2,8 +2,8 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Database Dinamis - KPM Enterprise</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>E-Monitoring KPM Enterprise - Full Version</title>
   
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.tailwindcss.com"></script>
@@ -13,302 +13,546 @@
         extend: { 
           fontFamily: { sans: ['Inter', 'sans-serif'] },
           colors: { 
-            dark: '#0F172A',
-            primary: '#1E3A8A', // Deep Blue Contrast
-            accent: '#F59E0B',
+            corporate: '#0B1B3D', // Deep Blue
+            corporateLight: '#1A365D',
+            accent: '#F59E0B', // Contrast Orange/Gold
             surface: '#FFFFFF',
-            background: '#F1F5F9'
+            background: '#F1F5F9',
+            textMain: '#0F172A',
+            textMuted: '#475569'
           }
         } 
       } 
     }
   </script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
 
   <style>
-    body { background-color: #F1F5F9; color: #0F172A; }
-    .card-table { background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow: hidden; }
-    .input-modern { width: 100%; border: 2px solid #E2E8F0; border-radius: 8px; padding: 12px 16px; font-weight: 600; color: #0F172A; transition: all 0.2s ease; outline: none; background: #F8FAFC;}
-    .input-modern:focus { border-color: #1E3A8A; background: #FFFFFF; box-shadow: 0 0 0 4px rgba(30, 58, 138, 0.1); }
-    .label-modern { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #475569; margin-bottom: 6px; display: block; }
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
+    body { font-family: 'Inter', sans-serif; background-color: #F1F5F9; color: #0F172A; -webkit-tap-highlight-color: transparent; }
+    .card-modern { background-color: #FFFFFF; border: 1px solid #E2E8F0; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05); border-radius: 16px; overflow: hidden; }
+    .input-corporate { width: 100%; background-color: #F8FAFC; border: 2px solid #E2E8F0; border-radius: 10px; padding: 12px 16px; outline: none; color: #0F172A; font-weight: 600; font-size: 14px; transition: all 0.2s; }
+    .input-corporate:focus { border-color: #0B1B3D; background-color: #FFFFFF; box-shadow: 0 0 0 4px rgba(11, 27, 61, 0.1); }
+    .label-corporate { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #475569; margin-bottom: 6px; display: block; }
+    
+    @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-slide { animation: slideUp 0.3s ease-out forwards; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-thumb { background-color: #CBD5E1; border-radius: 10px; }
   </style>
 </head>
 <body>
   <div id="root"></div>
 
   <script type="text/babel" data-presets="react">
-    const { useState, useEffect, useMemo } = React;
+    const { useState, useEffect, useMemo, useRef } = React;
 
-    // ==========================================
-    // MASUKKAN URL DEPLOY GAS ANDA DI SINI
-    // ==========================================
-    const GAS_URL = "ISI_DENGAN_URL_WEB_APP_GAS_ANDA_DISINI"; 
+    // === URL GOOGLE APPS SCRIPT ===
+    const GAS_URL = "https://script.google.com/macros/s/AKfycby_7rAmJQh9CM9Zcl0eqmApjga1JtTwX410VcrRDURnZdSARCdtS247saQeK-raJkNF/exec"; 
 
     function App() {
-      const [data, setData] = useState([]);
-      const [headers, setHeaders] = useState([]);
+      const [view, setView] = useState('dashboard');
+      const [kpmData, setKpmData] = useState([]);
       const [isLoading, setIsLoading] = useState(false);
-      const [activeSheet, setActiveSheet] = useState('Master_Data'); // Default berdasarkan gambar
-      const [view, setView] = useState('table'); // 'table' atau 'form'
-      const [formData, setFormData] = useState({});
+      const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
       const [searchQuery, setSearchQuery] = useState('');
+      
+      const [filterKecamatan, setFilterKecamatan] = useState('');
+      const [filterDesa, setFilterDesa] = useState('');
 
-      useEffect(() => {
-        if(GAS_URL !== "ISI_DENGAN_URL_WEB_APP_GAS_ANDA_DISINI") {
-          fetchData();
-        } else {
-          alert("PERHATIAN: Anda belum memasukkan URL GAS di dalam kode HTML!");
+      const [formData, setFormData] = useState({});
+      const fileInputRef = useRef(null);
+
+      // State khusus Monitoring
+      const [monKpm, setMonKpm] = useState('');
+      const [monJenis, setMonJenis] = useState('penyaluran'); 
+      const [monTahap, setMonTahap] = useState('Penyaluran_Tahap_1');
+      const [monBulan, setMonBulan] = useState('P2K2_Bln_1');
+      const [monStatus, setMonStatus] = useState('Tersalurkan');
+
+      useEffect(() => { 
+        fetchData(); 
+      }, []);
+
+      const showToast = (message, type = 'success') => {
+        setToast({ show: true, message, type });
+        setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
+      };
+
+      const callAPI = async (payload, returnRaw = false) => {
+        setIsLoading(true);
+        try {
+          const res = await fetch(GAS_URL, {
+            method: 'POST',
+            redirect: 'follow', // Bypass CORS GAS
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
+            body: JSON.stringify(payload)
+          });
+          const result = await res.json();
+          
+          if(returnRaw) {
+            setIsLoading(false);
+            return result;
+          }
+
+          if(result && result.status === 'success') {
+            showToast(result.message, 'success');
+            return true;
+          } else {
+            showToast(result.message || 'Gagal memproses data', 'error');
+            return false;
+          }
+        } catch (err) {
+          showToast('Terjadi kesalahan jaringan/CORS', 'error');
+          return false;
+        } finally {
+          setIsLoading(false);
         }
-      }, [activeSheet]);
+      };
 
       const fetchData = async () => {
         setIsLoading(true);
         try {
-          // Cache buster agar tidak nyangkut
-          const url = `${GAS_URL}?action=get_data&sheet=${activeSheet}&t=${Date.now()}`;
-          const response = await fetch(url, { redirect: 'follow' });
-          const json = await response.json();
+          const timestamp = new Date().getTime(); // Anti-Cache
+          const url = `${GAS_URL}?action=get_data&sheet=Data_KPM&t=${timestamp}`;
           
-          if (json.status === 'success' && json.data.length > 0) {
-            setData(json.data);
-            // DINAMIS: Ambil nama kolom langsung dari data Spreadsheet
-            const extractedHeaders = Object.keys(json.data[0]).filter(key => key !== 'rowIndex');
-            setHeaders(extractedHeaders);
-          } else {
-            setData([]);
-            // Jika kosong, minimal kita tidak error
-          }
-        } catch (err) {
-          console.error("Gagal menarik data:", err);
-          alert("Gagal terhubung ke Database. Pastikan URL GAS benar.");
-        } finally {
-          setIsLoading(false);
-        }
-      };
-
-      const handleInputChange = (header, value) => {
-        setFormData({ ...formData, [header]: value });
-      };
-
-      const saveData = async () => {
-        setIsLoading(true);
-        try {
-          const payload = {
-            action: "save_record",
-            sheetName: activeSheet,
-            payload: formData,
-            rowIndex: formData.rowIndex || null
-          };
-
-          const res = await fetch(GAS_URL, {
-            method: 'POST',
-            redirect: 'follow',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify(payload)
-          });
+          const response = await fetch(url, { method: 'GET', redirect: 'follow' });
+          const text = await response.text();
+          const json = JSON.parse(text);
           
-          const result = await res.json();
-          if (result.status === 'success') {
-            setView('table');
-            fetchData(); // Refresh data
-          } else {
-            alert("Gagal menyimpan data.");
+          if (json && json.status === 'success') {
+            setKpmData(json.data || []);
           }
-        } catch (err) {
-          alert("Terjadi kesalahan jaringan.");
-        } finally {
-          setIsLoading(false);
+        } catch (e) { 
+          console.error("Fetch Error:", e);
+        } finally { 
+          setIsLoading(false); 
         }
       };
 
-      const deleteData = async (rowIndex) => {
-        if (!confirm("Hapus data ini dari sistem?")) return;
-        setIsLoading(true);
-        try {
-          const res = await fetch(GAS_URL, {
-            method: 'POST',
-            redirect: 'follow',
-            body: JSON.stringify({ action: "delete_record", sheetName: activeSheet, rowIndex: rowIndex })
-          });
-          const result = await res.json();
-          if (result.status === 'success') fetchData();
-        } catch (err) {
-          alert("Gagal menghapus.");
-        } finally {
-          setIsLoading(false);
+      const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if(!file) return;
+        if(file.size > 2000000) return showToast('Maksimal ukuran foto 2MB', 'error'); 
+
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setFormData({...formData, fotoBase64: reader.result, fotoName: file.name, mimeType: file.type});
+        };
+        reader.readAsDataURL(file);
+      };
+
+      const saveKPM = async () => {
+        if(!formData.nama_pengurus || !formData.kecamatan || !formData.desa) {
+          return showToast('Nama, Kecamatan, dan Desa wajib diisi!', 'error');
+        }
+        
+        let finalFotoUrl = formData.foto_url || "";
+
+        if (formData.fotoBase64) {
+          const uploadResult = await callAPI({
+            action: "upload_file",
+            base64: formData.fotoBase64,
+            filename: formData.fotoName || "foto_kpm.jpg",
+            mimeType: formData.mimeType || "image/jpeg"
+          }, true);
+
+          if (uploadResult && uploadResult.status === 'success') {
+            finalFotoUrl = uploadResult.url;
+          } else {
+            return showToast('Gagal mengupload foto ke Drive', 'error');
+          }
+        }
+
+        const payloadData = {
+          "ID_KPM": formData.id_kpm || ('KPM' + Date.now().toString().slice(-6)),
+          "Nama_Pengurus": formData.nama_pengurus,
+          "NIK": formData.nik || "-",
+          "Alamat": formData.alamat || "-",
+          "Desa": formData.desa,
+          "Kecamatan": formData.kecamatan,
+          "Jumlah_Komponen": formData.jumlah_komponen || "0",
+          "Pekerjaan": formData.pekerjaan || "-",
+          "Status_Graduasi": formData.status_graduasi || "Belum Graduasi",
+          "Foto_URL": finalFotoUrl
+        };
+
+        const success = await callAPI({
+          action: "save_record",
+          sheetName: "Data_KPM",
+          payload: payloadData,
+          rowIndex: formData.rowIndex || null
+        });
+        
+        if(success) {
+          setView('data');
+          fetchData();
         }
       };
 
-      const openForm = (item = null) => {
-        if (item) {
-          setFormData(item);
-        } else {
-          // Form kosong sesuai header yang ada
-          const emptyForm = {};
-          headers.forEach(h => emptyForm[h] = "");
-          setFormData(emptyForm);
-        }
-        setView('form');
+      const deleteKPM = async (rowIndex) => {
+        if(!confirm("Data KPM akan dihapus permanen. Lanjutkan?")) return;
+        const success = await callAPI({ action: "delete_record", sheetName: "Data_KPM", rowIndex: rowIndex });
+        if(success) fetchData();
       };
+
+      const submitMonitoring = async () => {
+        if(!monKpm) return showToast('Pilih KPM terlebih dahulu!', 'error');
+        const success = await callAPI({
+          action: "update_monitoring",
+          idKpm: monKpm,
+          kolomTarget: monJenis === 'penyaluran' ? monTahap : monBulan,
+          nilaiTarget: monStatus
+        });
+        if(success) {
+          setMonKpm('');
+          setView('dashboard');
+        }
+      };
+
+      const uniqueKecamatan = useMemo(() => [...new Set(kpmData.map(item => item.Kecamatan).filter(k=>k && k!=='-'))], [kpmData]);
+      const uniqueDesa = useMemo(() => {
+        if (!filterKecamatan) return [];
+        return [...new Set(kpmData.filter(item => item.Kecamatan === filterKecamatan).map(item => item.Desa).filter(d=>d && d!=='-'))];
+      }, [kpmData, filterKecamatan]);
 
       const filteredData = useMemo(() => {
-        if (!searchQuery) return data;
-        return data.filter(item => 
-          Object.values(item).some(val => 
-            String(val).toLowerCase().includes(searchQuery.toLowerCase())
-          )
-        );
-      }, [data, searchQuery]);
+        return kpmData.filter(item => {
+          const matchKecamatan = filterKecamatan ? item.Kecamatan === filterKecamatan : true;
+          const matchDesa = filterDesa ? item.Desa === filterDesa : true;
+          const matchSearch = searchQuery ? (String(item.Nama_Pengurus).toLowerCase().includes(searchQuery.toLowerCase()) || String(item.ID_KPM).toLowerCase().includes(searchQuery.toLowerCase())) : true;
+          return matchKecamatan && matchDesa && matchSearch;
+        });
+      }, [kpmData, filterKecamatan, filterDesa, searchQuery]);
 
       return (
-        <div className="max-w-6xl mx-auto p-4 md:p-8 min-h-screen">
+        <div className="max-w-2xl mx-auto min-h-screen bg-background relative pb-24 shadow-2xl">
           
-          {/* HEADER KONTRAST TINGGI */}
-          <div className="bg-primary rounded-2xl p-6 md:p-8 mb-8 shadow-xl text-white flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-            <div>
-              <h1 className="text-3xl font-black tracking-tight mb-2">SYSTEM DATABASE</h1>
-              <p className="text-blue-200 font-medium text-sm">Sinkronisasi Dinamis & Auto-Mapping Aktif</p>
+          {/* TOAST NOTIFICATION */}
+          {toast.show && (
+            <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] animate-slide w-[90%] max-w-md">
+              <div className={`bg-white p-4 rounded-xl shadow-xl border-l-8 flex items-center gap-3 ${toast.type === 'success' ? 'border-green-500 text-green-700' : 'border-red-500 text-red-700'}`}>
+                <i className={`fas ${toast.type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'} text-2xl`}></i>
+                <p className="font-bold text-sm">{toast.message}</p>
+              </div>
             </div>
-            
-            <div className="w-full md:w-auto flex gap-3">
-              <select 
-                value={activeSheet} 
-                onChange={(e) => setActiveSheet(e.target.value)}
-                className="bg-white text-dark font-bold px-4 py-3 rounded-xl outline-none shadow-sm cursor-pointer flex-1 md:w-48 border-2 border-transparent focus:border-accent"
-              >
-                <option value="Master_Data">Sheet: Master_Data</option>
-                <option value="Data_KPM">Sheet: Data_KPM</option>
-                <option value="Monitoring">Sheet: Monitoring</option>
-                <option value="Komponen_ART">Sheet: Komponen_ART</option>
-              </select>
-              
-              <button onClick={() => fetchData()} className="bg-accent text-white px-5 py-3 rounded-xl font-bold shadow-sm hover:brightness-110 transition">
-                <i className={`fas fa-sync-alt ${isLoading ? 'animate-spin' : ''}`}></i>
+          )}
+
+          {/* GLOBAL LOADER */}
+          {isLoading && (
+            <div className="fixed inset-0 bg-corporate/20 backdrop-blur-sm z-[90] flex items-center justify-center">
+              <div className="bg-white p-6 rounded-2xl shadow-2xl flex flex-col items-center">
+                <i className="fas fa-circle-notch fa-spin text-4xl text-corporate mb-3"></i>
+                <span className="font-bold text-corporate text-sm tracking-widest">SINKRONISASI...</span>
+              </div>
+            </div>
+          )}
+
+          {/* HEADER MODERN */}
+          <div className="bg-corporate px-6 pt-12 pb-10 rounded-b-[2rem] relative z-20 shadow-xl">
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h1 className="text-3xl font-black text-surface tracking-tight">SDM PKH Pro</h1>
+                <p className="text-accent text-xs font-bold tracking-widest mt-1 uppercase">Sistem Enterprise</p>
+              </div>
+              <button onClick={fetchData} className="w-12 h-12 bg-white/10 hover:bg-white/20 rounded-xl flex items-center justify-center border border-white/20 transition">
+                <i className="fas fa-sync-alt text-surface text-lg"></i>
               </button>
             </div>
+            
+            {view !== 'form_kpm' && (
+              <div className="relative mt-2">
+                <i className="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-corporateLight text-lg"></i>
+                <input 
+                  type="text" 
+                  placeholder="Cari NIK / Nama Penerima..." 
+                  value={searchQuery} 
+                  onChange={(e) => setSearchQuery(e.target.value)} 
+                  className="w-full bg-surface border-0 text-textMain rounded-xl py-4 pl-12 pr-4 outline-none focus:ring-4 focus:ring-accent/40 font-bold text-sm shadow-inner transition-all" 
+                />
+              </div>
+            )}
           </div>
 
-          {/* VIEW: TABLE / CARDS */}
-          {view === 'table' && (
-            <div className="space-y-6">
-              
-              {/* Toolbar */}
-              <div className="flex flex-col md:flex-row justify-between gap-4 mb-2">
-                <div className="relative flex-1 max-w-md">
-                  <i className="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                  <input 
-                    type="text" 
-                    placeholder="Cari data apa saja..." 
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-slate-200 focus:border-primary outline-none font-semibold text-dark shadow-sm"
-                  />
+          <div className="p-6 relative z-10 space-y-6 -mt-6">
+            
+            {/* VIEW: DASHBOARD */}
+            {view === 'dashboard' && (
+              <div className="animate-slide space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="card-modern p-6 flex flex-col items-center justify-center text-center border-b-4 border-b-corporate">
+                    <h3 className="text-4xl font-black text-corporate">{filteredData.length}</h3>
+                    <p className="label-corporate mt-2">Total KPM Aktif</p>
+                  </div>
+                  <div className="card-modern p-6 flex flex-col items-center justify-center text-center border-b-4 border-b-accent">
+                    <h3 className="text-4xl font-black text-accent">
+                      {filteredData.filter(d => d.Status_Graduasi && d.Status_Graduasi !== 'Belum Graduasi').length}
+                    </h3>
+                    <p className="label-corporate mt-2">Total Graduasi</p>
+                  </div>
                 </div>
-                <button onClick={() => openForm()} className="bg-dark text-white px-6 py-3 rounded-xl font-bold hover:bg-slate-800 transition shadow-md flex items-center justify-center gap-2">
-                  <i className="fas fa-plus"></i> TAMBAH DATA
-                </button>
-              </div>
 
-              {/* Data Grid / Card Table */}
-              {isLoading && data.length === 0 ? (
-                <div className="text-center py-20 text-slate-400 font-bold"><i className="fas fa-circle-notch fa-spin text-4xl mb-4 text-primary"></i><br/>MENARIK DATA...</div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredData.map((item, idx) => (
-                    <div key={idx} className="card-table p-0 flex flex-col hover:border-primary transition duration-300">
-                      {/* Card Body - Dinamis membaca kolom */}
-                      <div className="p-6 flex-1 space-y-4">
-                        {headers.slice(0, 5).map((header, i) => (
-                          <div key={i}>
-                            <span className="label-modern">{header.replace(/_/g, ' ')}</span>
-                            <span className="font-bold text-dark text-sm break-words">{item[header] || '-'}</span>
-                          </div>
-                        ))}
-                        {headers.length > 5 && (
-                          <div className="text-xs font-bold text-slate-400 italic">... +{headers.length - 5} kolom lainnya</div>
+                <div className="card-modern overflow-hidden">
+                  <div onClick={() => { setFormData({}); setView('form_kpm'); }} className="flex items-center p-5 cursor-pointer hover:bg-slate-50 transition border-b border-slate-100 group">
+                    <div className="w-14 h-14 bg-corporate text-surface rounded-2xl flex items-center justify-center mr-5 shadow-md group-hover:scale-105 transition"><i className="fas fa-user-plus text-xl"></i></div>
+                    <div className="flex-1">
+                      <h4 className="font-black text-textMain text-base">Registrasi KPM Baru</h4>
+                      <p className="text-xs text-textMuted mt-1 font-medium">Input biodata & upload foto berkas</p>
+                    </div>
+                    <i className="fas fa-chevron-right text-slate-300"></i>
+                  </div>
+                  <div onClick={() => setView('monitoring')} className="flex items-center p-5 cursor-pointer hover:bg-slate-50 transition group">
+                    <div className="w-14 h-14 bg-accent text-corporate rounded-2xl flex items-center justify-center mr-5 shadow-md group-hover:scale-105 transition"><i className="fas fa-clipboard-check text-xl"></i></div>
+                    <div className="flex-1">
+                      <h4 className="font-black text-textMain text-base">Update Monitoring</h4>
+                      <p className="text-xs text-textMuted mt-1 font-medium">Catat Penyaluran & Kehadiran P2K2</p>
+                    </div>
+                    <i className="fas fa-chevron-right text-slate-300"></i>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* VIEW: DATA KPM (CARD LAYOUT) */}
+            {view === 'data' && (
+              <div className="animate-slide space-y-5">
+                <div className="flex gap-4">
+                  <select value={filterKecamatan} onChange={(e) => { setFilterKecamatan(e.target.value); setFilterDesa(''); }} className="input-corporate bg-white shadow-sm flex-1 text-xs">
+                    <option value="">Semua Kecamatan</option>
+                    {uniqueKecamatan.map(kec => <option key={kec} value={kec}>{kec}</option>)}
+                  </select>
+                  <select value={filterDesa} onChange={(e) => setFilterDesa(e.target.value)} className="input-corporate bg-white shadow-sm flex-1 text-xs" disabled={!filterKecamatan}>
+                    <option value="">Semua Desa</option>
+                    {uniqueDesa.map(desa => <option key={desa} value={desa}>{desa}</option>)}
+                  </select>
+                </div>
+
+                <div className="space-y-5">
+                  {filteredData.map((item, index) => (
+                    <div key={index} className="card-modern p-0 flex flex-col relative overflow-hidden group">
+                      {/* Graduasi Badge */}
+                      {(item.Status_Graduasi && item.Status_Graduasi !== 'Belum Graduasi') && 
+                        <div className="absolute top-0 right-0 bg-accent text-white text-[10px] font-black px-4 py-1.5 rounded-bl-xl tracking-widest z-10 shadow-sm">
+                          {item.Status_Graduasi.toUpperCase()}
+                        </div>
+                      }
+                      
+                      <div className="p-5 flex items-start">
+                        {/* Foto Profil KPM */}
+                        {item.Foto_URL && String(item.Foto_URL).includes('http') ? (
+                          <img src={item.Foto_URL} className="w-20 h-20 rounded-2xl object-cover border-2 border-slate-100 mr-5 shadow-sm" alt="profil" />
+                        ) : (
+                          <div className="w-20 h-20 bg-slate-100 text-slate-400 rounded-2xl flex items-center justify-center mr-5 border-2 border-slate-200"><i className="fas fa-camera text-2xl"></i></div>
                         )}
+                        
+                        <div className="flex-1 pt-1">
+                          <h4 className="font-black text-corporate text-lg leading-tight mb-1">{item.Nama_Pengurus}</h4>
+                          <div className="inline-block bg-slate-100 text-slate-600 px-2 py-1 rounded font-mono text-[10px] font-bold mb-2">ID: {item.ID_KPM}</div>
+                          <p className="text-xs text-textMuted font-semibold leading-relaxed">
+                            <i className="fas fa-map-marker-alt text-accent mr-2"></i>{item.Desa}, Kec. {item.Kecamatan}
+                          </p>
+                        </div>
                       </div>
                       
-                      {/* Card Footer Actions */}
-                      <div className="bg-slate-50 border-t border-slate-200 p-4 flex justify-end gap-3">
-                        <button onClick={() => openForm(item)} className="px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-bold text-slate-700 hover:text-primary hover:border-primary transition">
-                          EDIT
-                        </button>
-                        <button onClick={() => deleteData(item.rowIndex)} className="px-4 py-2 bg-red-50 text-red-600 rounded-lg text-sm font-bold hover:bg-red-100 transition">
-                          HAPUS
-                        </button>
+                      {/* Info Tambahan */}
+                      <div className="px-5 pb-5">
+                        <div className="bg-slate-50 rounded-xl p-3 grid grid-cols-2 gap-3 border border-slate-100">
+                          <div>
+                            <p className="label-corporate mb-1">NIK KTP</p>
+                            <p className="text-xs font-black text-corporate">{item.NIK || '-'}</p>
+                          </div>
+                          <div>
+                            <p className="label-corporate mb-1">Tanggungan</p>
+                            <p className="text-xs font-black text-corporate">{item.Jumlah_Komponen || '0'} Komponen</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="bg-slate-50 flex border-t border-slate-100 divide-x divide-slate-100">
+                        <button onClick={() => { 
+                          setFormData({
+                            rowIndex: item.rowIndex, id_kpm: item.ID_KPM, nama_pengurus: item.Nama_Pengurus,
+                            nik: item.NIK, alamat: item.Alamat, kecamatan: item.Kecamatan, desa: item.Desa,
+                            pekerjaan: item.Pekerjaan, jumlah_komponen: item.Jumlah_Komponen,
+                            status_graduasi: item.Status_Graduasi, foto_url: item.Foto_URL
+                          }); 
+                          setView('form_kpm'); 
+                        }} className="flex-1 py-3 text-sm font-bold text-corporate hover:bg-slate-100 transition"><i className="fas fa-pen mr-2"></i> EDIT DATA</button>
+                        
+                        <button onClick={() => deleteKPM(item.rowIndex)} className="flex-1 py-3 text-sm font-bold text-red-600 hover:bg-red-50 transition"><i className="fas fa-trash mr-2"></i> HAPUS</button>
                       </div>
                     </div>
                   ))}
                   {filteredData.length === 0 && !isLoading && (
-                     <div className="col-span-full text-center py-20 bg-white border-2 border-dashed border-slate-300 rounded-2xl text-slate-500 font-bold">
-                       DATA KOSONG / TIDAK DITEMUKAN
-                     </div>
+                    <div className="text-center py-16 bg-white rounded-2xl border-2 border-dashed border-slate-300">
+                      <i className="fas fa-folder-open text-5xl mb-4 text-slate-300"></i>
+                      <p className="font-bold text-slate-500">Data Tidak Ditemukan</p>
+                    </div>
                   )}
                 </div>
-              )}
-            </div>
-          )}
-
-          {/* VIEW: FORM DINAMIS */}
-          {view === 'form' && (
-            <div className="max-w-3xl mx-auto card-table p-6 md:p-10 shadow-2xl">
-              <div className="flex justify-between items-center mb-8 border-b-2 border-slate-100 pb-4">
-                <h2 className="text-2xl font-black text-dark tracking-tight">
-                  {formData.rowIndex ? 'EDIT DATA' : 'INPUT DATA BARU'}
-                </h2>
-                <button onClick={() => setView('table')} className="w-10 h-10 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 flex items-center justify-center font-bold">
-                  <i className="fas fa-times"></i>
-                </button>
               </div>
+            )}
 
-              {/* Form Input Generator Otomatis */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                {headers.map((header, idx) => (
-                  <div key={idx} className={header.length > 20 || header.includes('ALAMAT') ? "md:col-span-2" : ""}>
-                    <label className="label-modern">{header.replace(/_/g, ' ')}</label>
-                    {header.toLowerCase().includes('alamat') ? (
-                      <textarea 
-                        className="input-modern h-24 resize-none" 
-                        value={formData[header] || ''} 
-                        onChange={(e) => handleInputChange(header, e.target.value)}
-                      ></textarea>
-                    ) : (
-                      <input 
-                        type="text" 
-                        className="input-modern" 
-                        value={formData[header] || ''} 
-                        onChange={(e) => handleInputChange(header, e.target.value)}
-                      />
-                    )}
+            {/* VIEW: FORM REGISTRASI / EDIT */}
+            {view === 'form_kpm' && (
+              <div className="animate-slide card-modern p-6 md:p-8">
+                <div className="flex justify-between items-center mb-6 pb-4 border-b-2 border-slate-100">
+                  <h2 className="font-black text-corporate text-2xl">
+                    {formData?.rowIndex ? 'Edit Database' : 'Registrasi KPM'}
+                  </h2>
+                  <button onClick={() => setView('dashboard')} className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 transition">
+                    <i className="fas fa-times text-lg"></i>
+                  </button>
+                </div>
+
+                <div className="space-y-5">
+                  <div className="grid grid-cols-2 gap-5">
+                    <div>
+                      <label className="label-corporate">ID KPM</label>
+                      <input type="text" className="input-corporate" value={formData?.id_kpm || ''} onChange={(e) => setFormData({...formData, id_kpm: e.target.value})} placeholder="Otomatis jika kosong" />
+                    </div>
+                    <div>
+                      <label className="label-corporate">NIK KTP</label>
+                      <input type="number" className="input-corporate" value={formData?.nik || ''} onChange={(e) => setFormData({...formData, nik: e.target.value})} placeholder="16 Digit NIK" />
+                    </div>
                   </div>
-                ))}
-                {headers.length === 0 && (
-                  <div className="col-span-full text-red-500 font-bold bg-red-50 p-4 rounded-xl">
-                    Sistem belum mendeteksi nama kolom. Pastikan ada minimal 1 baris judul/header di Spreadsheet Anda.
+                  
+                  <div>
+                    <label className="label-corporate">Nama Pengurus (Sesuai KTP)</label>
+                    <input type="text" className="input-corporate" value={formData?.nama_pengurus || ''} onChange={(e) => setFormData({...formData, nama_pengurus: e.target.value})} />
                   </div>
-                )}
+                  
+                  <div>
+                    <label className="label-corporate">Alamat Lengkap</label>
+                    <textarea className="input-corporate h-24 resize-none" value={formData?.alamat || ''} onChange={(e) => setFormData({...formData, alamat: e.target.value})} placeholder="Jalan, RT/RW..."></textarea>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-5">
+                    <div>
+                      <label className="label-corporate">Kecamatan</label>
+                      <input type="text" className="input-corporate" value={formData?.kecamatan || ''} onChange={(e) => setFormData({...formData, kecamatan: e.target.value})} />
+                    </div>
+                    <div>
+                      <label className="label-corporate">Desa / Kelurahan</label>
+                      <input type="text" className="input-corporate" value={formData?.desa || ''} onChange={(e) => setFormData({...formData, desa: e.target.value})} />
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-5">
+                    <div>
+                      <label className="label-corporate">Pekerjaan</label>
+                      <input type="text" className="input-corporate" value={formData?.pekerjaan || ''} onChange={(e) => setFormData({...formData, pekerjaan: e.target.value})} />
+                    </div>
+                    <div>
+                      <label className="label-corporate">Jml Komponen ART</label>
+                      <input type="number" className="input-corporate" value={formData?.jumlah_komponen || ''} onChange={(e) => setFormData({...formData, jumlah_komponen: e.target.value})} />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="label-corporate">Status Kelulusan / Graduasi</label>
+                    <select className="input-corporate" value={formData?.status_graduasi || 'Belum Graduasi'} onChange={(e) => setFormData({...formData, status_graduasi: e.target.value})}>
+                      <option value="Belum Graduasi">Belum Graduasi</option>
+                      <option value="Graduasi Mandiri">Graduasi Mandiri</option>
+                      <option value="Graduasi Alamiah">Graduasi Alamiah</option>
+                    </select>
+                  </div>
+                  
+                  {/* UPLOAD AREA */}
+                  <div>
+                    <label className="label-corporate">Upload Berkas / Foto KPM</label>
+                    <div className="border-2 border-dashed border-slate-300 rounded-2xl p-6 mt-1 bg-slate-50 text-center hover:bg-slate-100 transition cursor-pointer" onClick={() => fileInputRef.current.click()}>
+                      <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
+                      <i className="fas fa-cloud-upload-alt text-4xl text-corporate mb-3"></i>
+                      <p className="font-bold text-sm text-corporate">{formData?.fotoName ? formData.fotoName : 'Klik untuk Upload Foto'}</p>
+                      <p className="text-xs text-slate-400 mt-1">Maks. 2MB (JPG/PNG)</p>
+                    </div>
+                  </div>
+
+                  <button onClick={saveKPM} className="w-full py-4 bg-corporate hover:bg-corporateLight text-surface rounded-xl font-black text-sm tracking-widest transition mt-6 shadow-xl">
+                    SIMPAN KE DATABASE
+                  </button>
+                </div>
               </div>
+            )}
 
-              <button 
-                onClick={saveData} 
-                disabled={isLoading || headers.length === 0}
-                className="w-full py-4 bg-primary hover:bg-blue-900 text-white rounded-xl font-black tracking-widest transition shadow-lg disabled:opacity-50"
-              >
-                {isLoading ? 'MENYIMPAN...' : 'SIMPAN KE DATABASE'}
-              </button>
+            {/* VIEW: MONITORING */}
+            {view === 'monitoring' && (
+              <div className="animate-slide space-y-6">
+                <div className="flex bg-slate-200 p-1.5 rounded-xl">
+                  <button onClick={() => { setMonJenis('penyaluran'); setMonStatus('Tersalurkan'); }} className={`flex-1 py-3 text-xs font-black uppercase tracking-wider rounded-lg transition-all ${monJenis === 'penyaluran' ? 'bg-white shadow-md text-corporate' : 'text-slate-500 hover:text-slate-700'}`}>Penyaluran</button>
+                  <button onClick={() => { setMonJenis('pertemuan'); setMonStatus('Hadir'); }} className={`flex-1 py-3 text-xs font-black uppercase tracking-wider rounded-lg transition-all ${monJenis === 'pertemuan' ? 'bg-white shadow-md text-corporate' : 'text-slate-500 hover:text-slate-700'}`}>Kehadiran P2K2</button>
+                </div>
+
+                <div className="card-modern p-6 md:p-8 border-t-4 border-t-accent">
+                  <div className="mb-6">
+                    <label className="label-corporate mb-2">Pilih KPM Target</label>
+                    <select className="input-corporate" value={monKpm} onChange={(e) => setMonKpm(e.target.value)}>
+                      <option value="">-- Ketik/Pilih Nama Penerima --</option>
+                      {kpmData.map(item => <option key={item.ID_KPM} value={item.ID_KPM}>{item.Nama_Pengurus} - {item.Desa}</option>)}
+                    </select>
+                  </div>
+
+                  {monJenis === 'penyaluran' ? (
+                    <div className="mb-8 animate-slide">
+                      <label className="label-corporate mb-2">Tahap Penyaluran</label>
+                      <select className="input-corporate mb-5" value={monTahap} onChange={(e) => setMonTahap(e.target.value)}>
+                        {['Penyaluran_Tahap_1', 'Penyaluran_Tahap_2', 'Penyaluran_Tahap_3', 'Penyaluran_Tahap_4'].map(t => <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>)}
+                      </select>
+                      <label className="label-corporate mb-2">Status Rekening</label>
+                      <select className="input-corporate" value={monStatus} onChange={(e) => setMonStatus(e.target.value)}>
+                        <option value="Tersalurkan">Tersalurkan (Sukses)</option>
+                        <option value="Tertunda">Tertunda</option>
+                        <option value="KKS Bermasalah">KKS Bermasalah</option>
+                      </select>
+                    </div>
+                  ) : (
+                    <div className="mb-8 animate-slide">
+                      <label className="label-corporate mb-2">Bulan Pertemuan</label>
+                      <select className="input-corporate mb-5" value={monBulan} onChange={(e) => setMonBulan(e.target.value)}>
+                        {Array.from({length: 12}, (_, i) => `P2K2_Bln_${i+1}`).map(b => <option key={b} value={b}>{b.replace(/_/g, ' ')}</option>)}
+                      </select>
+                      <label className="label-corporate mb-2">Status Kehadiran</label>
+                      <select className="input-corporate" value={monStatus} onChange={(e) => setMonStatus(e.target.value)}>
+                        <option value="Hadir">Hadir</option>
+                        <option value="Izin">Izin</option>
+                        <option value="Alpa">Alpa</option>
+                      </select>
+                    </div>
+                  )}
+
+                  <button onClick={submitMonitoring} className="w-full py-4 bg-corporate hover:bg-corporateLight text-surface rounded-xl font-black text-sm tracking-widest shadow-xl transition">
+                    UPDATE STATUS
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* NAVIGASI BAWAH */}
+          <div className="fixed bottom-0 left-0 w-full bg-white border-t border-slate-200 z-50 shadow-[0_-10px_25px_-5px_rgba(0,0,0,0.1)]">
+            <div className="max-w-2xl mx-auto flex justify-around px-2 py-3">
+              {[ 
+                { id: 'dashboard', icon: 'fa-chart-pie', label: 'Beranda' }, 
+                { id: 'data', icon: 'fa-address-book', label: 'Data KPM' }, 
+                { id: 'monitoring', icon: 'fa-tasks', label: 'Monitoring' }
+              ].map((item) => (
+                <div key={item.id} onClick={() => setView(item.id)} className="flex flex-col items-center justify-center w-1/3 cursor-pointer">
+                  <div className={`transition-all duration-300 ${view === item.id ? 'text-corporate scale-110' : 'text-slate-400 hover:text-slate-600'}`}>
+                    <i className={`fas ${item.icon} text-2xl`}></i>
+                  </div>
+                  <span className={`text-[10px] font-bold mt-1.5 transition-colors ${view === item.id ? 'text-corporate' : 'text-slate-400'}`}>{item.label}</span>
+                </div>
+              ))}
             </div>
-          )}
+          </div>
         </div>
       );
     }
-
     const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(<App />);
   </script>

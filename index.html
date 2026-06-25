@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>App PKH Pintar</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    /* THEME: BLUE, WHITE, ORANGE - GLOSSY 3D */
+    body {
+      background-color: #f0f4f8; /* Soft background */
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    /* App Container for Mobile View on Desktop */
+    .app-container {
+      max-width: 480px;
+      margin: 0 auto;
+      min-height: 100vh;
+      background: #ffffff;
+      box-shadow: 0 0 20px rgba(0,0,0,0.1);
+      position: relative;
+      padding-bottom: 80px;
+    }
+
+    /* Glossy Header */
+    .header-glossy {
+      background: linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%);
+      box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4), inset 0 -2px 10px rgba(0,0,0,0.1);
+      color: white;
+      border-bottom-left-radius: 20px;
+      border-bottom-right-radius: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    .header-glossy::after {
+      content: ''; position: absolute; top: 0; left: -50%; width: 200%; height: 100%;
+      background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0) 100%);
+      transform: skewX(-20deg); animation: shine 5s infinite;
+    }
+    @keyframes shine { 0% { left: -150%; } 100% { left: 150%; } }
+
+    /* Glossy Buttons */
+    .btn-orange-glossy {
+      background: linear-gradient(135deg, #ea580c 0%, #f97316 100%);
+      box-shadow: 0 4px 10px rgba(249, 115, 22, 0.4), inset 0 2px 0 rgba(255,255,255,0.3);
+      color: white;
+      border: none;
+      transition: all 0.2s;
+    }
+    .btn-orange-glossy:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px 5px rgba(249, 115, 22, 0.4);
+    }
+    
+    .btn-blue-glossy {
+      background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+      box-shadow: 0 4px 10px rgba(59, 130, 246, 0.4), inset 0 2px 0 rgba(255,255,255,0.3);
+      color: white;
+      transition: all 0.2s;
+    }
+    .btn-blue-glossy:active { transform: translateY(2px); }
+
+    /* Glass Cards */
+    .glass-card {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 1rem;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+    }
+
+    /* Bottom Navigation */
+    .bottom-nav {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      background: white;
+      box-shadow: 0 -4px 15px rgba(0,0,0,0.05);
+      border-top-left-radius: 20px; border-top-right-radius: 20px;
+      display: flex; justify-content: space-around;
+      padding: 10px 0; z-index: 50;
+    }
+    .nav-item {
+      display: flex; flex-direction: column; align-items: center;
+      color: #94a3b8; font-size: 0.75rem; cursor: pointer;
+      transition: color 0.3s;
+      width: 20%;
+    }
+    .nav-item.active { color: #f97316; font-weight: bold; } /* Active color Orange */
+    .nav-item i { font-size: 1.25rem; margin-bottom: 4px; transition: transform 0.3s; }
+    .nav-item.active i { transform: translateY(-2px); color: #2563EB; } /* Active icon Blue */
+
+    /* Inputs */
+    .input-glossy {
+      background: #f8fafc; border: 1px solid #cbd5e1;
+      border-radius: 0.75rem; padding: 0.75rem 1rem;
+      width: 100%; outline: none; transition: all 0.3s;
+    }
+    .input-glossy:focus {
+      border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); background: white;
+    }
+    
+    /* Animation Fast Response */
+    .fade-in { animation: fadeIn 0.3s ease-in-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body>
+
+<div class="app-container">
+
+  <!-- HEADER -->
+  <div class="header-glossy p-6 pb-8">
+    <div class="flex justify-between items-center mb-4">
+      <div>
+        <p class="text-blue-100 text-sm font-semibold tracking-wider">E-MONITORING PKH</p>
+        <h1 class="text-2xl font-bold">Halo, Pendamping!</h1>
+      </div>
+      <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-lg border-2 border-orange-500">
+        <img src="https://ui-avatars.com/api/?name=Pendamping+Sosial&background=f97316&color=fff" class="w-full h-full rounded-full" alt="Profile">
+      </div>
+    </div>
+    <div class="relative">
+      <i class="fas fa-search absolute left-4 top-3 text-blue-300"></i>
+      <input type="text" placeholder="Cari NIK atau Nama KPM..." class="w-full bg-blue-800/40 border border-blue-400/50 text-white placeholder-blue-200 rounded-full py-2.5 pl-12 pr-4 outline-none focus:bg-blue-800/60 transition shadow-inner">
+    </div>
+  </div>
+
+  <!-- VIEWS CONTAINER -->
+  <div class="p-4 relative -mt-4 z-10 space-y-4 fade-in" id="main-content">
+    
+    <!-- ================= VIEW: DASHBOARD ================= -->
+    <div id="view-dashboard" class="view-section">
+      <!-- Stats Grid -->
+      <div class="grid grid-cols-2 gap-3 mb-4">
+        <div class="glass-card p-4 text-center border-t-4 border-blue-500">
+          <div class="w-10 h-10 mx-auto bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-2"><i class="fas fa-users text-lg"></i></div>
+          <h3 class="text-2xl font-bold text-gray-800">245</h3>
+          <p class="text-xs text-gray-500 font-medium">Total KPM Aktif</p>
+        </div>
+        <div class="glass-card p-4 text-center border-t-4 border-orange-500">
+          <div class="w-10 h-10 mx-auto bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mb-2"><i class="fas fa-check-circle text-lg"></i></div>
+          <h3 class="text-2xl font-bold text-gray-800">82%</h3>
+          <p class="text-xs text-gray-500 font-medium">Penyaluran Selesai</p>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <h2 class="text-sm font-bold text-gray-800 mb-2 pl-1"><i class="fas fa-bolt text-orange-500 mr-1"></i> Aksi Cepat</h2>
+      <div class="glass-card p-2 space-y-2">
+        <button onclick="nav('view-monitoring')" class="w-full flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 transition">
+          <div class="flex items-center"><div class="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mr-3"><i class="fas fa-calendar-check"></i></div><span class="font-bold text-gray-700 text-sm">Input Pertemuan & Transaksi</span></div>
+          <i class="fas fa-chevron-right text-gray-400"></i>
+        </button>
+        <button onclick="nav('view-profil')" class="w-full flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 transition">
+          <div class="flex items-center"><div class="w-10 h-10 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mr-3"><i class="fas fa-user-plus"></i></div><span class="font-bold text-gray-700 text-sm">Tambah Anggota Keluarga (ART)</span></div>
+          <i class="fas fa-chevron-right text-gray-400"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- ================= VIEW: DATA KPM ================= -->
+    <div id="view-data" class="view-section hidden">
+      <div class="flex justify-between items-center mb-3">
+        <h2 class="font-bold text-blue-900 text-lg">Database KPM</h2>
+        <button class="btn-blue-glossy text-xs px-3 py-1.5 rounded-lg font-bold"><i class="fas fa-plus mr-1"></i> KPM Baru</button>
+      </div>
+      <!-- Mock KPM List -->
+      <div class="space-y-3">
+        <div class="glass-card p-3 flex justify-between items-center" onclick="nav('view-profil')">
+          <div class="flex items-center">
+            <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-gray-400 mr-3"><i class="fas fa-user"></i></div>
+            <div>
+              <h4 class="font-bold text-gray-800 text-sm">Siti Aminah</h4>
+              <p class="text-xs text-gray-500">ID: PKH-001 • Desa Maju</p>
+            </div>
+          </div>
+          <i class="fas fa-angle-right text-gray-400"></i>
+        </div>
+        <div class="glass-card p-3 flex justify-between items-center" onclick="nav('view-profil')">
+          <div class="flex items-center">
+            <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-gray-400 mr-3"><i class="fas fa-user"></i></div>
+            <div>
+              <h4 class="font-bold text-gray-800 text-sm">Budi Santoso</h4>
+              <p class="text-xs text-gray-500">ID: PKH-002 • Desa Sejahtera</p>
+            </div>
+          </div>
+          <i class="fas fa-angle-right text-gray-400"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= VIEW: MONITORING ================= -->
+    <div id="view-monitoring" class="view-section hidden">
+      <h2 class="font-bold text-blue-900 text-lg mb-3">Update Monitoring KPM</h2>
+      <div class="glass-card p-4">
+        <label class="text-xs font-bold text-gray-600 mb-1 block">Pilih KPM</label>
+        <select class="input-glossy text-sm mb-3">
+          <option>PKH-001 - Siti Aminah</option>
+          <option>PKH-002 - Budi Santoso</option>
+        </select>
+        
+        <label class="text-xs font-bold text-gray-600 mb-1 block">Pertemuan Bulanan (P2K2)</label>
+        <div class="grid grid-cols-3 gap-2 mb-4">
+          <button class="bg-green-100 text-green-700 border border-green-300 py-1 rounded text-xs font-bold"><i class="fas fa-check mr-1"></i>Bln 1</button>
+          <button class="bg-gray-100 text-gray-500 border border-gray-300 py-1 rounded text-xs font-bold hover:bg-blue-50">Bln 2</button>
+          <button class="bg-gray-100 text-gray-500 border border-gray-300 py-1 rounded text-xs font-bold hover:bg-blue-50">Bln 3</button>
+        </div>
+
+        <label class="text-xs font-bold text-gray-600 mb-1 block">Status Transaksi (Per 3 Bulan)</label>
+        <select class="input-glossy text-sm mb-4">
+          <option>Tahap 1: Belum Transaksi</option>
+          <option>Tahap 1: Sudah Transaksi</option>
+        </select>
+
+        <button class="btn-orange-glossy w-full py-3 rounded-xl font-bold text-sm shadow-lg"><i class="fas fa-save mr-2"></i> Simpan Monitoring</button>
+      </div>
+    </div>
+
+    <!-- ================= VIEW: PROFIL & KOMPONEN ================= -->
+    <div id="view-profil" class="view-section hidden">
+      <div class="glass-card p-4 mb-4 text-center border-t-4 border-blue-500">
+        <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-2 text-2xl"><i class="fas fa-user-circle"></i></div>
+        <h3 class="font-bold text-lg text-gray-800">Siti Aminah</h3>
+        <span class="bg-orange-100 text-orange-600 px-2 py-0.5 rounded text-xs font-bold">KPM Aktif</span>
+        <p class="text-xs text-gray-500 mt-2"><i class="fas fa-map-marker-alt text-red-500 mr-1"></i> Desa Maju, Kec. Tengah</p>
+      </div>
+
+      <div class="flex justify-between items-center mb-2">
+        <h2 class="font-bold text-gray-800 text-sm">Anggota Rumah Tangga</h2>
+        <button onclick="toggleModal('modal-art')" class="text-blue-600 text-xs font-bold"><i class="fas fa-plus-circle"></i> Tambah</button>
+      </div>
+      
+      <div class="glass-card p-3 flex justify-between items-center mb-2 border-l-4 border-l-orange-500">
+        <div>
+          <h4 class="font-bold text-gray-800 text-sm">Ahmad (Anak)</h4>
+          <p class="text-xs text-gray-500">Kategori: SD | Belum Verifikasi</p>
+        </div>
+        <i class="fas fa-edit text-blue-400"></i>
+      </div>
+    </div>
+
+    <!-- ================= VIEW: LAINNYA ================= -->
+    <div id="view-menu" class="view-section hidden">
+      <h2 class="font-bold text-blue-900 text-lg mb-3">Fitur Sistem</h2>
+      <div class="space-y-3">
+        <button onclick="toggleModal('modal-kolom')" class="glass-card w-full flex items-center p-4">
+          <div class="w-10 h-10 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center mr-3"><i class="fas fa-table"></i></div>
+          <div class="text-left"><h4 class="font-bold text-sm text-gray-800">Tambah Kolom Spreadsheet</h4><p class="text-xs text-gray-500">Buat kolom baru otomatis</p></div>
+        </button>
+        
+        <button onclick="toggleModal('modal-upload')" class="glass-card w-full flex items-center p-4">
+          <div class="w-10 h-10 bg-orange-100 text-orange-600 rounded-lg flex items-center justify-center mr-3"><i class="fas fa-cloud-upload-alt"></i></div>
+          <div class="text-left"><h4 class="font-bold text-sm text-gray-800">Upload Berkas Drive</h4><p class="text-xs text-gray-500">Simpan foto/dokumen KPM</p></div>
+        </button>
+      </div>
+    </div>
+
+  </div> <!-- End Views Container -->
+
+  <!-- BOTTOM NAVIGATION -->
+  <div class="bottom-nav">
+    <div class="nav-item active" id="nav-dashboard" onclick="nav('view-dashboard')">
+      <i class="fas fa-home"></i><span>Home</span>
+    </div>
+    <div class="nav-item" id="nav-data" onclick="nav('view-data')">
+      <i class="fas fa-database"></i><span>Data</span>
+    </div>
+    <div class="nav-item" id="nav-monitoring" onclick="nav('view-monitoring')">
+      <i class="fas fa-chart-line"></i><span>Monitor</span>
+    </div>
+    <div class="nav-item" id="nav-profil" onclick="nav('view-profil')">
+      <i class="fas fa-user"></i><span>Profil</span>
+    </div>
+    <div class="nav-item" id="nav-menu" onclick="nav('view-menu')">
+      <i class="fas fa-th-large"></i><span>Menu</span>
+    </div>
+  </div>
+
+  <!-- MODALS -->
+  <!-- Modal Tambah Kolom -->
+  <div id="modal-kolom" class="hidden fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center">
+    <div class="bg-white w-full max-w-md rounded-t-2xl sm:rounded-2xl p-6 transform transition-all">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="font-bold text-lg text-blue-900"><i class="fas fa-plus-square text-orange-500 mr-2"></i>Tambah Kolom</h3>
+        <button onclick="toggleModal('modal-kolom')" class="text-gray-400 text-xl"><i class="fas fa-times"></i></button>
+      </div>
+      <label class="text-xs font-bold text-gray-600 mb-1 block">Pilih Sheet</label>
+      <select id="sheetName" class="input-glossy mb-3 text-sm">
+        <option value="Data_KPM">Data KPM</option>
+        <option value="Monitoring">Monitoring</option>
+        <option value="Komponen_ART">Komponen ART</option>
+      </select>
+      <label class="text-xs font-bold text-gray-600 mb-1 block">Nama Kolom Baru</label>
+      <input type="text" id="newColName" placeholder="Contoh: Keterangan_Survei" class="input-glossy mb-4 text-sm">
+      <button onclick="submitAddColumn()" class="btn-blue-glossy w-full py-3 rounded-xl font-bold text-sm shadow-lg">Buat di Spreadsheet</button>
+    </div>
+  </div>
+
+  <!-- Modal Upload -->
+  <div id="modal-upload" class="hidden fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center">
+    <div class="bg-white w-full max-w-md rounded-t-2xl sm:rounded-2xl p-6">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="font-bold text-lg text-blue-900"><i class="fas fa-upload text-orange-500 mr-2"></i>Upload File</h3>
+        <button onclick="toggleModal('modal-upload')" class="text-gray-400 text-xl"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="border-2 border-dashed border-blue-300 rounded-xl p-8 text-center bg-blue-50 mb-4 relative cursor-pointer">
+        <input type="file" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+        <i class="fas fa-cloud-upload-alt text-4xl text-blue-400 mb-2"></i>
+        <p class="text-sm font-bold text-blue-800">Tap untuk Pilih File</p>
+        <p class="text-xs text-gray-500">Mendukung Foto & PDF</p>
+      </div>
+      <button onclick="alert('Simulasi upload berjalan cepat!')" class="btn-orange-glossy w-full py-3 rounded-xl font-bold text-sm shadow-lg">Upload ke Drive</button>
+    </div>
+  </div>
+
+  <!-- Modal Tambah ART -->
+  <div id="modal-art" class="hidden fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center">
+    <div class="bg-white w-full max-w-md rounded-t-2xl sm:rounded-2xl p-6">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="font-bold text-lg text-blue-900"><i class="fas fa-user-plus text-orange-500 mr-2"></i>Tambah Komponen/ART</h3>
+        <button onclick="toggleModal('modal-art')" class="text-gray-400 text-xl"><i class="fas fa-times"></i></button>
+      </div>
+      <input type="text" placeholder="Nama Anggota Keluarga" class="input-glossy mb-3 text-sm">
+      <select class="input-glossy mb-3 text-sm">
+        <option>Pilih Hubungan...</option>
+        <option>Anak</option><option>Istri/Suami</option><option>Lainnya</option>
+      </select>
+      <select class="input-glossy mb-4 text-sm">
+        <option>Pilih Kategori PKH...</option>
+        <option>SD</option><option>SMP</option><option>SMA</option><option>Balita</option><option>Bumil</option><option>Lansia</option>
+      </select>
+      <button onclick="alert('Komponen disimpan!')" class="btn-blue-glossy w-full py-3 rounded-xl font-bold text-sm shadow-lg">Simpan ART</button>
+    </div>
+  </div>
+
+</div> <!-- End App Container -->
+
+<script>
+  // GAS URL (Ganti dengan URL Deployment Anda nanti)
+  const GAS_URL = "https://script.google.com/macros/s/AKfycby_7rAmJQh9CM9Zcl0eqmApjga1JtTwX410VcrRDURnZdSARCdtS247saQeK-raJkNF/exec";
+
+  // Navigation Logic
+  function nav(targetId) {
+    // Hide all views
+    document.querySelectorAll('.view-section').forEach(el => {
+      el.classList.add('hidden');
+      el.classList.remove('fade-in');
+    });
+    // Remove active state from nav
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    
+    // Show target view & set active nav
+    const targetView = document.getElementById(targetId);
+    targetView.classList.remove('hidden');
+    targetView.classList.add('fade-in'); // Re-trigger animation
+    
+    const navId = 'nav-' + targetId.replace('view-', '');
+    if(document.getElementById(navId)) {
+      document.getElementById(navId).classList.add('active');
+    }
+  }
+
+  // Modal Logic
+  function toggleModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if(modal.classList.contains('hidden')) {
+      modal.classList.remove('hidden');
+    } else {
+      modal.classList.add('hidden');
+    }
+  }
+
+  // API Call Simulator for Adding Column
+  async function submitAddColumn() {
+    const sheetName = document.getElementById('sheetName').value;
+    const colName = document.getElementById('newColName').value;
+    
+    if(!colName) return alert("Nama kolom wajib diisi!");
+    
+    const btn = event.target;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
+    
+    // Simulasi Fast Response UI
+    setTimeout(() => {
+      alert(`Berhasil! Perintah menambah kolom '${colName}' di sheet '${sheetName}' telah dikirim ke Mesin GAS.`);
+      btn.innerHTML = 'Buat di Spreadsheet';
+      toggleModal('modal-kolom');
+      document.getElementById('newColName').value = '';
+    }, 800);
+    
+    /* UNTUK LIVE PRODUCTION, GUNAKAN KODE FETCH DI BAWAH INI:
+    const payload = { action: "add_column", sheetName: sheetName, newColumnName: colName };
+    try {
+      const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify(payload) });
+      const data = await res.json();
+      alert(data.message);
+    } catch(e) { alert("Error koneksi!"); }
+    */
+  }
+</script>
+</body>
+</html>

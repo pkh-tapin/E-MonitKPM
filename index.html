@@ -5,177 +5,192 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>E-Monitoring PKH Premium</title>
   
-  <!-- FontAwesome untuk stabilitas tanpa build system -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: { sans: ['Plus Jakarta Sans', 'sans-serif'] },
-        }
-      }
-    }
+    tailwind.config = { darkMode: 'class', theme: { extend: { fontFamily: { sans: ['Plus Jakarta Sans', 'sans-serif'] } } } }
   </script>
-
-  <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   
-  <!-- React & ReactDOM (Versi UMD Global - Bebas Error Import) -->
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-  
-  <!-- Babel Standalone -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <style>
-    body { 
-      font-family: 'Plus Jakarta Sans', sans-serif; 
-      -webkit-tap-highlight-color: transparent;
-    }
-    
-    /* Modern Glassmorphism */
-    .glass-card {
-      background: rgba(255, 255, 255, 0.7);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: 1px solid rgba(255, 255, 255, 0.5);
-      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
-    }
-    
-    .dark .glass-card {
-      background: rgba(30, 41, 59, 0.7);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
-    }
-
-    .header-gradient {
-      background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
-    }
-    
-    .dark .header-gradient {
-      background: linear-gradient(135deg, #020617 0%, #0f172a 100%);
-    }
-
-    /* Form Inputs */
-    .input-modern {
-      @apply w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 transition-all text-slate-800 dark:text-slate-100 font-medium text-sm;
-    }
-
-    /* Animations */
+    body { font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+    .glass-card { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.5); box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05); }
+    .dark .glass-card { background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2); }
+    .header-gradient { background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%); }
+    .dark .header-gradient { background: linear-gradient(135deg, #020617 0%, #0f172a 100%); }
+    .input-modern { @apply w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 transition-all text-slate-800 dark:text-slate-100 font-medium text-sm; }
     @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     .animate-slideUp { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-    
-    ::-webkit-scrollbar { display: none; } /* Clean mobile look */
+    ::-webkit-scrollbar { display: none; }
   </style>
 </head>
-<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 antialiased transition-colors duration-300">
-  
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 antialiased">
   <div id="root"></div>
 
-  <!-- Script type text/babel (TIDAK MENGGUNAKAN IMPORT) -->
   <script type="text/babel">
-    const { useState, useEffect, useMemo } = React;
+    const { useState, useEffect, useMemo, useRef } = React;
 
-    const GAS_URL = "https://script.google.com/macros/s/AKfycby_7rAmJQh9CM9Zcl0eqmApjga1JtTwX410VcrRDURnZdSARCdtS247saQeK-raJkNF/exec"; 
+    // === GANTI DENGAN URL DEPLOYMENT BARU ANDA ===
+    const GAS_URL = "https://script.google.com/macros/s/AKfycby_7rAmJQh9CM9Zcl0eqmApjga1JtTwX410VcrRDURnZdSARCdtS247saQeK-raJkNF/exec; 
 
     function App() {
       const [view, setView] = useState('dashboard');
       const [kpmData, setKpmData] = useState([]);
-      const [isLoading, setIsLoading] = useState(true);
+      const [isLoading, setIsLoading] = useState(false);
       const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
       const [searchQuery, setSearchQuery] = useState('');
       
-      // States Wilayah
       const [lockedKecamatan, setLockedKecamatan] = useState(localStorage.getItem('locked_kecamatan') || '');
       const [filterKecamatan, setFilterKecamatan] = useState(localStorage.getItem('locked_kecamatan') || '');
       const [filterDesa, setFilterDesa] = useState('');
 
+      // State Form CRUD
+      const [formData, setFormData] = useState(null);
+      const fileInputRef = useRef(null);
+
       // State Form Monitoring
-      const [selectedKPM, setSelectedKPM] = useState('');
-      const [statusSalur, setStatusSalur] = useState('Belum Transaksi');
+      const [monKpm, setMonKpm] = useState('');
+      const [monJenis, setMonJenis] = useState('penyaluran'); // penyaluran | pertemuan
+      const [monTahap, setMonTahap] = useState('Tahap 1');
+      const [monBulan, setMonBulan] = useState('Januari');
+      const [monStatus, setMonStatus] = useState('Sudah Transaksi');
       
-      // Theme
       const [darkMode, setDarkMode] = useState(localStorage.getItem('theme') === 'dark');
 
       useEffect(() => {
-        if (darkMode) {
-          document.documentElement.classList.add('dark');
-          localStorage.setItem('theme', 'dark');
-        } else {
-          document.documentElement.classList.remove('dark');
-          localStorage.setItem('theme', 'light');
-        }
+        if (darkMode) { document.documentElement.classList.add('dark'); localStorage.setItem('theme', 'dark'); } 
+        else { document.documentElement.classList.remove('dark'); localStorage.setItem('theme', 'light'); }
       }, [darkMode]);
 
-      useEffect(() => {
-        fetchData();
-      }, []);
-
-      const fetchData = async () => {
-        setIsLoading(true);
-        try {
-          const response = await fetch(`${GAS_URL}?action=get_kpm_data`);
-          const json = await response.json();
-          
-          if (json.data) {
-            const formattedData = json.data.map(item => ({
-              id: item.ID_KPM || item['ID KPM'] || item.id || item.NIK || '-',
-              nama: item.Nama_Pengurus || item['NAMA PENGURUS'] || item.NAMA || item.nama || '-',
-              kecamatan: item.Kecamatan || item.KECAMATAN || item.kecamatan || '-',
-              desa: item.Desa || item.DESA || item.desa || item.Kelurahan || '-',
-              kategori: item.Jumlah_Komponen || item.Kategori || item.KATEGORI || item.kategori || '-',
-              status: item.Status || 'Belum Transaksi'
-            }));
-            setKpmData(formattedData);
-            showToast('Data berhasil disinkronisasi', 'success');
-          } else {
-            showToast('Format tabel server tidak sesuai', 'error');
-          }
-        } catch (error) {
-          showToast('Mode Offline: Menampilkan data lokal', 'error');
-        } finally {
-          setIsLoading(false);
-        }
-      };
+      useEffect(() => { fetchData(); }, []);
 
       const showToast = (message, type = 'success') => {
         setToast({ show: true, message, type });
         setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3500);
       };
 
-      // Real API POST simulation
-      const handleSaveMonitoring = async () => {
-        if (!selectedKPM) return showToast('Pilih KPM terlebih dahulu!', 'error');
-        
+      // FUNGSI KOMUNIKASI DATABASE (GAS)
+      const callAPI = async (payload) => {
         setIsLoading(true);
         try {
-          // Implementasi fetch POST ke Firebase/GAS akan berada di sini.
-          await new Promise(resolve => setTimeout(resolve, 1200)); 
-          showToast(`Laporan ${selectedKPM} tersimpan ke database!`, 'success');
-          setView('dashboard');
-        } catch (error) {
-          showToast('Gagal menyimpan laporan', 'error');
+          const res = await fetch(GAS_URL, {
+            method: 'POST',
+            // Gunakan text/plain untuk bypass CORS preflight di GAS
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
+            body: JSON.stringify(payload)
+          });
+          const result = await res.json();
+          if(result.status === 'success') {
+            showToast(result.message, 'success');
+            return true;
+          } else {
+            showToast(result.message, 'error');
+            return false;
+          }
+        } catch (err) {
+          showToast("Koneksi gagal", 'error');
+          return false;
         } finally {
           setIsLoading(false);
         }
       };
 
-      const uniqueKecamatan = useMemo(() => [...new Set(kpmData.map(item => item.kecamatan))], [kpmData]);
+      const fetchData = async () => {
+        setIsLoading(true);
+        try {
+          const response = await fetch(`${GAS_URL}?action=get_kpm_data`);
+          const json = await response.json();
+          if (json.data) {
+            // Normalisasi key dari Spreadsheet (bisa diubah sesuai header asli)
+            const formatted = json.data.map(item => ({
+              rowIndex: item.rowIndex,
+              id: item.ID || item.ID_KPM || item['ID KPM'] || item.NIK || '-',
+              nama: item.Nama || item.Nama_Pengurus || item.NAMA || '-',
+              kecamatan: item.Kecamatan || item.KECAMATAN || '-',
+              desa: item.Desa || item.DESA || '-',
+              anggota_keluarga: item.Anggota_Keluarga || item['Anggota Keluarga'] || 0,
+              pekerjaan: item.Pekerjaan || item.PEKERJAAN || '-',
+              graduasi: item.Graduasi || item.Status_Graduasi || 'Belum',
+              fotoUrl: item.Foto_URL || item.Foto || ''
+            }));
+            setKpmData(formatted);
+          }
+        } catch (e) { showToast('Gagal memuat data dari Spreadsheet', 'error'); } 
+        finally { setIsLoading(false); }
+      };
+
+      // HANDLING FILE UPLOAD
+      const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if(!file) return;
+        if(file.size > 2000000) return showToast("Maksimal ukuran foto 2MB", "error"); // Batas 2MB agar aman di GAS
+
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setFormData({...formData, fotoBase64: reader.result, fotoName: file.name});
+        };
+        reader.readAsDataURL(file);
+      };
+
+      // CRUD ACTIONS
+      const saveKPM = async () => {
+        if(!formData.nama || !formData.kecamatan || !formData.desa) return showToast("Lengkapi data wajib!", "error");
+        
+        const payload = {
+          action: formData.rowIndex ? "update_kpm" : "create_kpm",
+          data: formData
+        };
+        
+        const success = await callAPI(payload);
+        if(success) {
+          setView('data');
+          fetchData();
+        }
+      };
+
+      const deleteKPM = async (rowIndex) => {
+        if(!confirm("Yakin ingin menghapus KPM ini?")) return;
+        const success = await callAPI({ action: "delete_kpm", id: rowIndex });
+        if(success) fetchData();
+      };
+
+      // MONITORING ACTION
+      const submitMonitoring = async () => {
+        if(!monKpm) return showToast('Pilih KPM!', 'error');
+        
+        const payload = {
+          action: "add_monitoring",
+          data: {
+            id_kpm: monKpm,
+            jenis: monJenis,
+            detail: monJenis === 'penyaluran' ? monTahap : monBulan,
+            status: monStatus
+          }
+        };
+
+        const success = await callAPI(payload);
+        if(success) {
+          setMonKpm('');
+          setView('dashboard');
+        }
+      };
+
+      // FILTERING
+      const uniqueKecamatan = useMemo(() => [...new Set(kpmData.map(item => item.kecamatan).filter(k=>k!=='-'))], [kpmData]);
       const uniqueDesa = useMemo(() => {
         if (!filterKecamatan) return [];
-        return [...new Set(kpmData.filter(item => item.kecamatan === filterKecamatan).map(item => item.desa))];
+        return [...new Set(kpmData.filter(item => item.kecamatan === filterKecamatan).map(item => item.desa).filter(d=>d!=='-'))];
       }, [kpmData, filterKecamatan]);
 
       const filteredData = useMemo(() => {
         return kpmData.filter(item => {
           const matchKecamatan = filterKecamatan ? item.kecamatan === filterKecamatan : true;
           const matchDesa = filterDesa ? item.desa === filterDesa : true;
-          const matchSearch = searchQuery ? 
-            (item.nama.toLowerCase().includes(searchQuery.toLowerCase()) || item.id.includes(searchQuery)) : true;
+          const matchSearch = searchQuery ? (item.nama.toLowerCase().includes(searchQuery.toLowerCase()) || item.id.includes(searchQuery)) : true;
           return matchKecamatan && matchDesa && matchSearch;
         });
       }, [kpmData, filterKecamatan, filterDesa, searchQuery]);
@@ -183,7 +198,7 @@
       return (
         <div className="max-w-[480px] mx-auto min-h-screen bg-slate-50 dark:bg-slate-900 shadow-2xl relative pb-24 overflow-x-hidden transition-colors duration-300">
           
-          {/* TOAST NOTIFICATION */}
+          {/* TOAST & LOADER */}
           {toast.show && (
             <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-[400px] animate-slideUp">
               <div className={`flex items-center p-4 rounded-2xl shadow-xl text-white backdrop-blur-md border border-white/20 ${toast.type === 'success' ? 'bg-emerald-600/90' : 'bg-rose-600/90'}`}>
@@ -192,13 +207,11 @@
               </div>
             </div>
           )}
-
-          {/* LOADING OVERLAY */}
           {isLoading && (
             <div className="fixed inset-0 z-[90] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center">
               <div className="glass-card p-8 rounded-[2rem] flex flex-col items-center animate-slideUp">
                 <i className="fas fa-sync-alt text-blue-500 animate-spin text-4xl mb-4"></i>
-                <h3 className="text-slate-800 dark:text-white font-bold text-lg">Memproses...</h3>
+                <h3 className="text-slate-800 dark:text-white font-bold text-lg">Sinkronisasi Server...</h3>
               </div>
             </div>
           )}
@@ -208,86 +221,51 @@
             <div className="flex justify-between items-start mb-6">
               <div>
                 <span className="inline-block bg-blue-500/30 text-blue-100 text-[10px] font-bold px-3 py-1 rounded-full mb-3 backdrop-blur-md border border-blue-400/30 tracking-widest uppercase">
-                  V.3.0 Enterprise
+                  V.4.0 Database Pro
                 </span>
                 <h1 className="text-3xl font-extrabold text-white tracking-tight">E-Monit KPM</h1>
               </div>
-              <button 
-                onClick={() => setDarkMode(!darkMode)} 
-                className="w-10 h-10 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/20 hover:bg-white/20 transition-all"
-              >
+              <button onClick={() => setDarkMode(!darkMode)} className="w-10 h-10 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/20 hover:bg-white/20">
                  <i className={`fas ${darkMode ? 'fa-sun text-amber-300' : 'fa-moon text-blue-100'}`}></i>
               </button>
             </div>
-            
-            <div className="relative group">
-              <i className="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-blue-300 group-focus-within:text-blue-500 transition-colors"></i>
-              <input 
-                type="text" 
-                placeholder="Cari Nama / ID KPM..." 
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-white/10 border border-white/20 text-white placeholder-blue-200/80 rounded-2xl py-3.5 pl-12 pr-4 outline-none focus:bg-white focus:text-slate-900 focus:border-white transition-all shadow-inner font-medium text-sm backdrop-blur-md"
-              />
-            </div>
+            {view !== 'form_kpm' && (
+              <div className="relative group">
+                <i className="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-blue-300"></i>
+                <input type="text" placeholder="Cari Nama / ID KPM..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-white/10 border border-white/20 text-white placeholder-blue-200/80 rounded-2xl py-3.5 pl-12 pr-4 outline-none focus:bg-white focus:text-slate-900 transition-all font-medium text-sm backdrop-blur-md" />
+              </div>
+            )}
           </div>
 
-          {/* MAIN CONTENT AREA */}
           <div className="p-5 relative -mt-4 z-10 space-y-5">
             
             {/* VIEW: DASHBOARD */}
             {view === 'dashboard' && (
               <div className="animate-slideUp space-y-5">
-                <div className="glass-card p-5 border-l-4 border-l-blue-500 flex justify-between items-center rounded-2xl">
-                   <div>
-                     <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest mb-1">Wilayah Fokus</p>
-                     <h3 className="font-extrabold text-slate-800 dark:text-white text-sm">
-                       {lockedKecamatan ? `Kec. ${lockedKecamatan}` : 'Semua Wilayah'}
-                     </h3>
-                   </div>
-                   <button onClick={() => setView('settings')} className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-3 py-1.5 rounded-lg font-bold">
-                     Ubah
-                   </button>
-                </div>
-
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="glass-card p-5 text-center rounded-3xl relative overflow-hidden">
-                    <div className="w-12 h-12 mx-auto bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center mb-3 text-xl">
-                      <i className="fas fa-users"></i>
-                    </div>
+                  <div className="glass-card p-5 text-center rounded-3xl relative">
+                    <div className="w-12 h-12 mx-auto bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center mb-3 text-xl"><i className="fas fa-users"></i></div>
                     <h3 className="text-3xl font-extrabold text-slate-800 dark:text-white mb-1">{filteredData.length}</h3>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Total KPM</p>
+                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Total KPM</p>
                   </div>
-                  
-                  <div className="glass-card p-5 text-center rounded-3xl relative overflow-hidden">
-                    <div className="w-12 h-12 mx-auto bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 rounded-2xl flex items-center justify-center mb-3 text-xl">
-                      <i className="fas fa-check-circle"></i>
-                    </div>
+                  <div className="glass-card p-5 text-center rounded-3xl relative">
+                    <div className="w-12 h-12 mx-auto bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 rounded-2xl flex items-center justify-center mb-3 text-xl"><i className="fas fa-graduation-cap"></i></div>
                     <h3 className="text-3xl font-extrabold text-slate-800 dark:text-white mb-1">
-                      {filteredData.filter(d => d.status === 'Sudah Transaksi').length}
+                      {filteredData.filter(d => d.graduasi !== 'Belum').length}
                     </h3>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Selesai Salur</p>
+                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Telah Graduasi</p>
                   </div>
                 </div>
 
-                <div className="pt-2">
-                  <h2 className="text-sm font-bold text-slate-800 dark:text-white ml-1 mb-3 flex items-center">Akses Cepat</h2>
-                  <div className="glass-card p-2 rounded-2xl space-y-1">
-                    <button onClick={() => setView('data')} className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors group">
-                      <div className="flex items-center">
-                        <div className="w-10 h-10 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg flex items-center justify-center mr-3 group-hover:text-blue-500"><i className="fas fa-folder-open"></i></div>
-                        <div className="text-left"><h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">Database KPM</h4><p className="text-[11px] text-slate-500">Lihat & Filter Data Lengkap</p></div>
-                      </div>
-                      <i className="fas fa-chevron-right text-slate-400 group-hover:text-blue-500"></i>
-                    </button>
-                    <button onClick={() => setView('monitoring')} className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors group">
-                      <div className="flex items-center">
-                        <div className="w-10 h-10 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg flex items-center justify-center mr-3 group-hover:text-orange-500"><i className="fas fa-clipboard-check"></i></div>
-                        <div className="text-left"><h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">Input Monitoring</h4><p className="text-[11px] text-slate-500">Status Salur & Kehadiran</p></div>
-                      </div>
-                      <i className="fas fa-chevron-right text-slate-400 group-hover:text-orange-500"></i>
-                    </button>
-                  </div>
+                <div className="glass-card p-2 rounded-2xl space-y-1">
+                  <button onClick={() => { setFormData({}); setView('form_kpm'); }} className="w-full flex items-center p-4 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors group">
+                    <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center mr-4"><i className="fas fa-user-plus"></i></div>
+                    <div className="text-left"><h4 className="font-bold text-slate-800 dark:text-white text-sm">Tambah KPM Baru</h4><p className="text-[11px] text-slate-500">Input data & Upload Dokumen</p></div>
+                  </button>
+                  <button onClick={() => setView('monitoring')} className="w-full flex items-center p-4 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors group border-t border-slate-100 dark:border-slate-800">
+                    <div className="w-10 h-10 bg-orange-100 text-orange-600 rounded-lg flex items-center justify-center mr-4"><i className="fas fa-clipboard-check"></i></div>
+                    <div className="text-left"><h4 className="font-bold text-slate-800 dark:text-white text-sm">Catat Monitoring</h4><p className="text-[11px] text-slate-500">Penyaluran Tahap & P2K2</p></div>
+                  </button>
                 </div>
               </div>
             )}
@@ -295,98 +273,111 @@
             {/* VIEW: DATA & FILTER */}
             {view === 'data' && (
               <div className="animate-slideUp space-y-5">
-                <div className="glass-card p-5 rounded-2xl space-y-4">
-                  <div className="flex justify-between items-center pb-3 border-b border-slate-200 dark:border-slate-700">
-                    <h2 className="font-bold text-slate-800 dark:text-white text-sm">Filter Spesifik</h2>
-                    <button onClick={fetchData} className="text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-3 py-1.5 rounded-lg flex items-center">
-                      <i className="fas fa-sync-alt mr-1"></i> Muat Ulang
-                    </button>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Kecamatan</label>
-                      <select 
-                        value={filterKecamatan} 
-                        onChange={(e) => { setFilterKecamatan(e.target.value); setFilterDesa(''); }}
-                        className="input-modern" disabled={!!lockedKecamatan}
-                      >
-                        <option value="">Semua Kec.</option>
-                        {uniqueKecamatan.map(kec => <option key={kec} value={kec}>{kec}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Desa</label>
-                      <select 
-                        value={filterDesa} 
-                        onChange={(e) => setFilterDesa(e.target.value)}
-                        className="input-modern" disabled={!filterKecamatan}
-                      >
-                        <option value="">Semua Desa</option>
-                        {uniqueDesa.map(desa => <option key={desa} value={desa}>{desa}</option>)}
-                      </select>
-                    </div>
-                  </div>
+                <div className="glass-card p-5 rounded-2xl flex gap-3">
+                  <select value={filterKecamatan} onChange={(e) => { setFilterKecamatan(e.target.value); setFilterDesa(''); }} className="input-modern w-1/2 text-xs" disabled={!!lockedKecamatan}>
+                    <option value="">Semua Kec.</option>
+                    {uniqueKecamatan.map(kec => <option key={kec} value={kec}>{kec}</option>)}
+                  </select>
+                  <select value={filterDesa} onChange={(e) => setFilterDesa(e.target.value)} className="input-modern w-1/2 text-xs" disabled={!filterKecamatan}>
+                    <option value="">Semua Desa</option>
+                    {uniqueDesa.map(desa => <option key={desa} value={desa}>{desa}</option>)}
+                  </select>
                 </div>
 
                 <div className="space-y-3">
-                  {filteredData.length === 0 ? (
-                    <div className="text-center py-10 bg-white/50 dark:bg-slate-800/50 rounded-3xl border border-dashed border-slate-300 dark:border-slate-600">
-                      <i className="fas fa-database text-4xl text-slate-400 mb-3 block"></i>
-                      <p className="text-slate-600 dark:text-slate-300 text-sm font-bold">Data kosong</p>
-                    </div>
-                  ) : (
-                    filteredData.slice(0, 50).map((item, index) => (
-                      <div key={index} className="glass-card p-4 rounded-2xl flex flex-col active:scale-[0.98] transition-transform">
-                        <div className="flex justify-between items-start mb-3">
-                          <div className="flex items-center">
-                            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-800 rounded-lg flex items-center justify-center text-white mr-3 font-bold text-lg">
-                              {item.nama.charAt(0)}
-                            </div>
-                            <div>
-                              <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">{item.nama}</h4>
-                              <p className="text-[10px] text-slate-500 font-mono mt-0.5">ID: {item.id}</p>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex justify-between items-center mt-2 pt-2 border-t border-slate-100 dark:border-slate-700/50">
-                           <p className="text-[11px] text-slate-600 dark:text-slate-400 font-medium flex items-center">
-                             <i className="fas fa-map-marker-alt text-orange-500 mr-2"></i> {item.desa}
-                           </p>
-                           <span className={`text-[9px] px-2 py-1 rounded-md font-bold uppercase tracking-wider ${item.status === 'Sudah Transaksi' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400'}`}>
-                             {item.status === 'Sudah Transaksi' ? 'SELESAI' : 'BELUM'}
-                           </span>
+                  {filteredData.map((item, index) => (
+                    <div key={index} className="glass-card p-4 rounded-2xl flex flex-col relative overflow-hidden">
+                      {item.graduasi !== 'Belum' && <div className="absolute -right-6 top-3 bg-emerald-500 text-white text-[9px] font-bold px-8 py-1 rotate-45">GRADUASI</div>}
+                      
+                      <div className="flex items-start mb-3">
+                        {item.fotoUrl && item.fotoUrl.includes('http') ? (
+                          <img src={item.fotoUrl} className="w-12 h-12 rounded-lg object-cover mr-3 border border-slate-200" />
+                        ) : (
+                          <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center mr-3 font-bold text-lg"><i className="fas fa-user"></i></div>
+                        )}
+                        <div className="flex-1">
+                          <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">{item.nama}</h4>
+                          <p className="text-[10px] text-slate-500 font-mono mt-0.5">ID: {item.id}</p>
+                          <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-1"><i className="fas fa-map-marker-alt text-orange-500 mr-1"></i> {item.desa}, {item.kecamatan}</p>
                         </div>
                       </div>
-                    ))
-                  )}
-                  {filteredData.length > 50 && <p className="text-center text-xs text-slate-500 mt-4">Hanya menampilkan 50 data pertama.</p>}
+                      
+                      <div className="grid grid-cols-2 gap-2 mt-2 pt-3 border-t border-slate-100 dark:border-slate-700/50 mb-3">
+                        <div>
+                          <p className="text-[9px] text-slate-400 uppercase">Pekerjaan</p>
+                          <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 truncate">{item.pekerjaan}</p>
+                        </div>
+                        <div>
+                          <p className="text-[9px] text-slate-400 uppercase">Tanggungan</p>
+                          <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">{item.anggota_keluarga} Orang</p>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2">
+                        <button onClick={() => { setFormData(item); setView('form_kpm'); }} className="flex-1 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 py-2 rounded-lg text-xs font-bold hover:bg-blue-100"><i className="fas fa-edit mr-1"></i> Edit</button>
+                        <button onClick={() => deleteKPM(item.rowIndex)} className="flex-1 bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 py-2 rounded-lg text-xs font-bold hover:bg-rose-100"><i className="fas fa-trash mr-1"></i> Hapus</button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
 
-            {/* VIEW: SETTINGS */}
-            {view === 'settings' && (
+            {/* VIEW: FORM CRUD KPM */}
+            {view === 'form_kpm' && (
               <div className="animate-slideUp space-y-5">
-                <div className="glass-card p-6 rounded-3xl">
-                   <h3 className="font-bold text-slate-800 dark:text-white text-base mb-2">Fokus Wilayah (Lock)</h3>
-                   <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-5 leading-relaxed">Kunci aplikasi pada kecamatan dampingan Anda untuk mempercepat loading data.</p>
-                   
-                   <div className="mb-6">
-                     <select 
-                        value={lockedKecamatan} 
-                        onChange={(e) => {
-                          setLockedKecamatan(e.target.value);
-                          setFilterKecamatan(e.target.value);
-                          localStorage.setItem('locked_kecamatan', e.target.value);
-                          showToast('Preferensi wilayah disimpan');
-                        }}
-                        className="input-modern"
-                      >
-                        <option value="">-- Tampilkan Semua Kecamatan --</option>
-                        {uniqueKecamatan.map(kec => <option key={kec} value={kec}>{kec}</option>)}
-                      </select>
-                   </div>
+                <div className="flex justify-between items-center mb-2">
+                  <h2 className="font-extrabold text-slate-800 dark:text-white text-lg">
+                    {formData?.rowIndex ? 'Edit Data KPM' : 'Tambah KPM Baru'}
+                  </h2>
+                  <button onClick={() => setView('data')} className="text-slate-400 hover:text-slate-600"><i className="fas fa-times text-xl"></i></button>
+                </div>
+
+                <div className="glass-card p-5 rounded-3xl space-y-4">
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-500 block mb-1">Nama Lengkap Pengurus</label>
+                    <input type="text" className="input-modern" value={formData?.nama || ''} onChange={(e) => setFormData({...formData, nama: e.target.value})} placeholder="Contoh: Siti Aminah" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-500 block mb-1">Kecamatan</label>
+                      <input type="text" className="input-modern" value={formData?.kecamatan || ''} onChange={(e) => setFormData({...formData, kecamatan: e.target.value})} />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-500 block mb-1">Desa / Kelurahan</label>
+                      <input type="text" className="input-modern" value={formData?.desa || ''} onChange={(e) => setFormData({...formData, desa: e.target.value})} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-500 block mb-1">Pekerjaan</label>
+                      <input type="text" className="input-modern" value={formData?.pekerjaan || ''} onChange={(e) => setFormData({...formData, pekerjaan: e.target.value})} placeholder="Petani/Buruh..." />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-500 block mb-1">Jml Anggota Keluarga</label>
+                      <input type="number" className="input-modern" value={formData?.anggota_keluarga || ''} onChange={(e) => setFormData({...formData, anggota_keluarga: e.target.value})} />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-500 block mb-1">Status Graduasi</label>
+                    <select className="input-modern" value={formData?.graduasi || 'Belum'} onChange={(e) => setFormData({...formData, graduasi: e.target.value})}>
+                      <option value="Belum">Belum Graduasi</option>
+                      <option value="Mandiri">Graduasi Mandiri</option>
+                      <option value="Alamiah">Graduasi Alamiah</option>
+                    </select>
+                  </div>
+                  
+                  <div className="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl p-4 text-center">
+                    <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
+                    <button onClick={() => fileInputRef.current.click()} className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-4 py-2 rounded-lg text-xs font-bold hover:bg-slate-200 w-full mb-2">
+                      <i className="fas fa-camera mr-2"></i> {formData?.fotoName ? formData.fotoName : 'Upload Foto Profil / Rumah'}
+                    </button>
+                    <p className="text-[9px] text-slate-400">Format: JPG/PNG, Maksimal 2MB.</p>
+                  </div>
+
+                  <button onClick={saveKPM} className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-lg flex justify-center items-center mt-4">
+                    <i className="fas fa-save mr-2"></i> Simpan ke Spreadsheet
+                  </button>
                 </div>
               </div>
             )}
@@ -394,65 +385,72 @@
             {/* VIEW: MONITORING */}
             {view === 'monitoring' && (
               <div className="animate-slideUp space-y-5">
-                <div className="glass-card p-6 rounded-3xl border-t-4 border-t-orange-500">
-                  <div className="mb-5">
-                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest block mb-2">Pilih KPM Tersasar</label>
-                    <select 
-                      className="input-modern"
-                      value={selectedKPM}
-                      onChange={(e) => setSelectedKPM(e.target.value)}
-                    >
-                      <option value="">-- Pilih KPM --</option>
-                      {filteredData.slice(0,20).map(item => (
-                        <option key={item.id} value={item.id}>{item.nama} - {item.desa}</option>
-                      ))}
+                <div className="flex bg-slate-200/50 dark:bg-slate-800 p-1 rounded-xl mb-4">
+                  <button onClick={() => setMonJenis('penyaluran')} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${monJenis === 'penyaluran' ? 'bg-white dark:bg-slate-700 shadow text-blue-600 dark:text-blue-400' : 'text-slate-500'}`}>Penyaluran</button>
+                  <button onClick={() => setMonJenis('pertemuan')} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${monJenis === 'pertemuan' ? 'bg-white dark:bg-slate-700 shadow text-orange-600 dark:text-orange-400' : 'text-slate-500'}`}>Pertemuan P2K2</button>
+                </div>
+
+                <div className="glass-card p-6 rounded-3xl border-t-4 border-t-blue-500">
+                  <div className="mb-4">
+                    <label className="text-[11px] font-bold text-slate-500 block mb-2">Cari KPM</label>
+                    <select className="input-modern" value={monKpm} onChange={(e) => setMonKpm(e.target.value)}>
+                      <option value="">-- Pilih KPM Tersasar --</option>
+                      {filteredData.map(item => <option key={item.id} value={item.id}>{item.nama} - {item.desa}</option>)}
                     </select>
                   </div>
 
-                  <div className="mb-6">
-                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest block mb-2">Status Salur (Tahap Berjalan)</label>
-                    <select 
-                      className="input-modern"
-                      value={statusSalur}
-                      onChange={(e) => setStatusSalur(e.target.value)}
-                    >
-                      <option value="Belum Transaksi">Tahap 1: Belum Transaksi</option>
-                      <option value="Sudah Transaksi">Tahap 1: Sudah Transaksi</option>
-                    </select>
-                  </div>
+                  {monJenis === 'penyaluran' ? (
+                    <div className="mb-4 animate-slideUp">
+                      <label className="text-[11px] font-bold text-slate-500 block mb-2">Tahap Penyaluran (Per Tahun)</label>
+                      <select className="input-modern mb-3" value={monTahap} onChange={(e) => setMonTahap(e.target.value)}>
+                        {['Tahap 1', 'Tahap 2', 'Tahap 3', 'Tahap 4'].map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                      <label className="text-[11px] font-bold text-slate-500 block mb-2">Status Penyaluran</label>
+                      <select className="input-modern" value={monStatus} onChange={(e) => setMonStatus(e.target.value)}>
+                        <option value="Sudah Transaksi">Sudah Transaksi (Tersalur)</option>
+                        <option value="Belum Transaksi">Belum Transaksi / Tertunda</option>
+                        <option value="KKS Bermasalah">KKS Bermasalah</option>
+                      </select>
+                    </div>
+                  ) : (
+                    <div className="mb-4 animate-slideUp">
+                      <label className="text-[11px] font-bold text-slate-500 block mb-2">Bulan Pertemuan P2K2 / FDS</label>
+                      <select className="input-modern mb-3" value={monBulan} onChange={(e) => setMonBulan(e.target.value)}>
+                        {['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'].map(b => <option key={b} value={b}>{b}</option>)}
+                      </select>
+                      <label className="text-[11px] font-bold text-slate-500 block mb-2">Status Kehadiran</label>
+                      <select className="input-modern" value={monStatus} onChange={(e) => setMonStatus(e.target.value)}>
+                        <option value="Hadir">Hadir</option>
+                        <option value="Izin">Izin (Berhalangan)</option>
+                        <option value="Alpa">Alpa (Tanpa Keterangan)</option>
+                      </select>
+                    </div>
+                  )}
 
-                  <button 
-                    onClick={handleSaveMonitoring} 
-                    className="w-full py-3.5 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-xl font-bold text-sm shadow-lg shadow-orange-500/30 flex justify-center items-center transition-all active:scale-[0.98]"
-                  >
-                    <i className="fas fa-cloud-upload-alt mr-2 text-lg"></i> Simpan Database
+                  <button onClick={submitMonitoring} className="w-full py-3.5 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl font-bold text-sm shadow-lg flex justify-center items-center mt-6">
+                    <i className="fas fa-cloud-upload-alt mr-2 text-lg"></i> Simpan ke Spreadsheet
                   </button>
                 </div>
               </div>
             )}
+            
+            {view === 'settings' && (<div className="p-4 text-center text-sm text-slate-500">Pengaturan dikunci. Fitur filter wilayah terintegrasi di halaman Data.</div>)}
           </div>
 
           {/* BOTTOM NAVIGATION */}
-          <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800 rounded-t-3xl flex justify-around px-2 py-3 z-50">
-            {[
-              { id: 'dashboard', icon: 'fa-home', label: 'Utama' },
-              { id: 'data', icon: 'fa-database', label: 'Data KPM' },
-              { id: 'monitoring', icon: 'fa-clipboard-check', label: 'Monitor' },
-              { id: 'settings', icon: 'fa-cog', label: 'Seting' }
-            ].map((item) => (
-              <div key={item.id} onClick={() => setView(item.id)} className="flex flex-col items-center justify-center w-1/4 cursor-pointer group">
-                <div className={`relative flex items-center justify-center w-10 h-10 rounded-xl mb-1 transition-all ${view === item.id ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' : 'text-slate-400 dark:text-slate-500'}`}>
+          <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800 flex justify-around px-2 py-3 z-50">
+            {[ { id: 'dashboard', icon: 'fa-home', label: 'Utama' }, { id: 'data', icon: 'fa-database', label: 'Data KPM' }, { id: 'monitoring', icon: 'fa-clipboard-check', label: 'Monitor' }].map((item) => (
+              <div key={item.id} onClick={() => setView(item.id)} className="flex flex-col items-center justify-center w-1/3 cursor-pointer group">
+                <div className={`relative flex items-center justify-center w-10 h-10 rounded-xl mb-1 transition-all ${view === item.id ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' : 'text-slate-400'}`}>
                   <i className={`fas ${item.icon} text-lg`}></i>
                 </div>
                 <span className={`text-[9px] font-bold transition-colors ${view === item.id ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}`}>{item.label}</span>
               </div>
             ))}
           </div>
-
         </div>
       );
     }
-
     const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(<App />);
   </script>

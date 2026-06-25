@@ -3,47 +3,93 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>E-Monitoring PKH</title>
+  <title>E-Monitoring PKH Premium</title>
   
-  <!-- FontAwesome untuk Ikon -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
-  <!-- Tailwind CSS untuk Styling -->
   <script src="https://cdn.tailwindcss.com"></script>
   
-  <!-- React & ReactDOM -->
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   
-  <!-- Babel Standalone untuk membaca React di Browser -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-  <!-- CUSTOM STYLES DIPINDAHKAN KE SINI AGAR TIDAK BENTROK DENGAN REACT -->
   <style>
-    .glass-card { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 1); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); border-radius: 1rem; }
-    .header-glossy { background: linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%); box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4), inset 0 -2px 10px rgba(0,0,0,0.1); position: relative; overflow: hidden; }
-    .header-glossy::after { content: ''; position: absolute; top: 0; left: -150%; width: 200%; height: 100%; background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0) 100%); transform: skewX(-20deg); animation: shine 6s infinite; }
-    .btn-orange-glossy { background: linear-gradient(135deg, #ea580c 0%, #f97316 100%); box-shadow: 0 4px 10px rgba(249, 115, 22, 0.4), inset 0 2px 0 rgba(255,255,255,0.3); transition: all 0.2s; border: none; }
-    .btn-orange-glossy:active { transform: translateY(2px); box-shadow: 0 2px 5px rgba(249, 115, 22, 0.4); }
-    .btn-blue-glossy { background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); box-shadow: 0 4px 10px rgba(59, 130, 246, 0.4), inset 0 2px 0 rgba(255,255,255,0.3); transition: all 0.2s; border: none; }
-    .btn-blue-glossy:active { transform: translateY(2px); }
-    .input-glossy { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 0.75rem; padding: 0.75rem 1rem; width: 100%; outline: none; transition: all 0.3s; }
-    .input-glossy:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); background: white; }
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; }
+    
+    .glass-card {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+      border-radius: 1.25rem;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .header-glossy {
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #3b82f6 100%);
+      box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.4), inset 0 -2px 10px rgba(0,0,0,0.2);
+      position: relative; overflow: hidden;
+    }
+    
+    .header-glossy::after {
+      content: ''; position: absolute; top: 0; left: -150%; width: 200%; height: 100%;
+      background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0) 100%);
+      transform: skewX(-20deg); animation: shine 7s infinite;
+    }
+    
+    .btn-orange-glossy {
+      background: linear-gradient(135deg, #ea580c 0%, #f97316 100%);
+      box-shadow: 0 4px 15px rgba(249, 115, 22, 0.4), inset 0 2px 0 rgba(255,255,255,0.2);
+      border: none; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .btn-orange-glossy:active { transform: translateY(3px) scale(0.98); box-shadow: 0 2px 5px rgba(249, 115, 22, 0.4); }
+    
+    .btn-blue-glossy {
+      background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+      box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4), inset 0 2px 0 rgba(255,255,255,0.2);
+      border: none; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .btn-blue-glossy:active { transform: translateY(3px) scale(0.98); }
+    
+    .input-glossy {
+      background: #f1f5f9; border: 1.5px solid #e2e8f0; border-radius: 1rem; padding: 0.875rem 1.25rem; 
+      width: 100%; outline: none; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); font-weight: 500;
+    }
+    
+    .input-glossy:focus { 
+      border-color: #3b82f6; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15); background: white; transform: translateY(-1px);
+    }
+
+    /* Animations */
     @keyframes shine { 0% { left: -150%; } 100% { left: 150%; } }
-    @keyframes slideDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-    .animate-slideDown { animation: slideDown 0.3s ease-out forwards; }
-    @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-    .animate-fadeIn { animation: fadeIn 0.3s ease-out forwards; }
+    @keyframes slideDown { 0% { transform: translate(-50%, -100%); opacity: 0; } 100% { transform: translate(-50%, 0); opacity: 1; } }
+    @keyframes slideUp { 0% { transform: translate(-50%, 100%); opacity: 0; } 100% { transform: translate(-50%, 0); opacity: 1; } }
+    @keyframes popIn { 0% { opacity: 0; transform: scale(0.9); } 100% { opacity: 1; transform: scale(1); } }
+    
+    .animate-slideDown { animation: slideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    .animate-popIn { animation: popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
   </style>
 </head>
-<body class="bg-slate-50">
+<body class="bg-slate-50 text-slate-800 antialiased selection:bg-blue-200 selection:text-blue-900">
   
   <div id="root"></div>
 
-  <script type="text/babel" data-type="module">
+  <script type="text/babel">
+    // MENGAMBIL FUNGSI DARI OBJECT REACT GLOBAL (Solusi Error Import)
     const { useState, useEffect, useMemo } = React;
 
-    // URL Google Apps Script Database Anda
+    // URL Google Apps Script Anda
     const GAS_URL = "https://script.google.com/macros/s/AKfycby_7rAmJQh9CM9Zcl0eqmApjga1JtTwX410VcrRDURnZdSARCdtS247saQeK-raJkNF/exec"; 
 
     function App() {
@@ -79,12 +125,12 @@
             }));
             
             setKpmData(formattedData);
-            showToast('Data berhasil dimuat dari Spreadsheet', 'success');
+            showToast('Sinkronisasi data berhasil', 'success');
           } else {
-            showToast('Data kosong atau format salah', 'error');
+            showToast('Data kosong atau format tabel salah', 'error');
           }
         } catch (error) {
-          showToast('Gagal terhubung ke Google Script', 'error');
+          showToast('Koneksi jaringan terputus', 'error');
         } finally {
           setIsLoading(false);
         }
@@ -92,9 +138,10 @@
 
       const showToast = (message, type = 'success') => {
         setToast({ show: true, message, type });
-        setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
+        setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3500);
       };
 
+      // Performa Tinggi untuk Filter
       const uniqueKecamatan = useMemo(() => [...new Set(kpmData.map(item => item.kecamatan))], [kpmData]);
       const uniqueDesa = useMemo(() => {
         if (!filterKecamatan) return [];
@@ -117,138 +164,156 @@
         setFilterKecamatan(kecamatan);
         setFilterDesa('');
         localStorage.setItem('locked_kecamatan', kecamatan);
-        showToast(`Kecamatan dikunci ke: ${kecamatan || 'Semua'}`, 'success');
+        showToast(`Wilayah difokuskan ke: ${kecamatan || 'Semua Wilayah'}`, 'success');
       };
 
       const handleSave = (actionName) => {
         setIsLoading(true);
         setTimeout(() => {
           setIsLoading(false);
-          showToast(`${actionName} berhasil disimpan realtime!`, 'success');
-        }, 600);
+          showToast(`${actionName} tersimpan dengan aman!`, 'success');
+        }, 800);
       };
 
       return (
-        <div className="max-w-[480px] mx-auto min-h-screen bg-slate-50 shadow-2xl relative pb-20 font-sans overflow-x-hidden">
+        <div className="max-w-[480px] mx-auto min-h-screen bg-slate-50 shadow-2xl relative pb-24 overflow-x-hidden">
           
-          {/* TOAST NOTIFICATION */}
+          {/* TOAST NOTIFICATION PREMIUM */}
           {toast.show && (
-            <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[100] w-[90%] max-w-[400px] animate-slideDown">
-              <div className={`flex items-center p-4 rounded-2xl shadow-2xl text-white ${toast.type === 'success' ? 'bg-gradient-to-r from-emerald-500 to-green-500' : 'bg-gradient-to-r from-red-500 to-rose-500'}`}>
-                <i className={`fas ${toast.type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle'} text-xl mr-3`}></i>
-                <span className="font-bold text-sm">{toast.message}</span>
+            <div className="fixed top-4 left-1/2 z-[100] w-[90%] max-w-[400px] animate-slideDown">
+              <div className={`flex items-center p-4 rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.3)] text-white backdrop-blur-md border border-white/20 ${toast.type === 'success' ? 'bg-emerald-600/90' : 'bg-rose-600/90'}`}>
+                <div className={`w-8 h-8 flex items-center justify-center rounded-full mr-3 ${toast.type === 'success' ? 'bg-emerald-500' : 'bg-rose-500'}`}>
+                  <i className={`fas ${toast.type === 'success' ? 'fa-check' : 'fa-exclamation'} text-sm`}></i>
+                </div>
+                <span className="font-semibold tracking-wide text-sm">{toast.message}</span>
               </div>
             </div>
           )}
 
-          {/* LOADING OVERLAY */}
+          {/* LOADING OVERLAY PREMIUM */}
           {isLoading && (
-            <div className="fixed inset-0 z-[90] bg-white/60 backdrop-blur-sm flex items-center justify-center">
-              <div className="bg-white p-6 rounded-3xl shadow-xl flex flex-col items-center animate-fadeIn border border-blue-100">
-                <div className="w-12 h-12 border-4 border-blue-200 border-t-orange-500 rounded-full animate-spin mb-3"></div>
-                <p className="text-blue-900 font-bold text-sm">Memproses Data...</p>
+            <div className="fixed inset-0 z-[90] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center">
+              <div className="bg-white p-8 rounded-[2rem] shadow-2xl flex flex-col items-center animate-popIn border border-white">
+                <div className="relative w-16 h-16 mb-4">
+                  <div className="absolute inset-0 border-4 border-slate-100 rounded-full"></div>
+                  <div className="absolute inset-0 border-4 border-blue-600 rounded-full border-t-transparent animate-spin"></div>
+                </div>
+                <h3 className="text-slate-800 font-bold text-lg">Memproses...</h3>
+                <p className="text-slate-500 text-xs font-medium mt-1">Menyinkronkan data server</p>
               </div>
             </div>
           )}
 
-          {/* HEADER */}
-          <div className="header-glossy p-6 pb-8 rounded-b-[2rem]">
-            <div className="flex justify-between items-center mb-5">
+          {/* HEADER PREMIUM */}
+          <div className="header-glossy p-6 pt-10 pb-8 rounded-b-[2.5rem] relative z-20">
+            <div className="flex justify-between items-start mb-6">
               <div>
-                <p className="text-blue-200 text-xs font-bold tracking-widest uppercase mb-1">E-Monitoring PKH</p>
-                <h1 className="text-2xl font-extrabold text-white">Data BNBA 2026</h1>
+                <span className="inline-block bg-blue-500/30 text-blue-100 text-[10px] font-bold px-3 py-1 rounded-full mb-3 backdrop-blur-md border border-blue-400/30 tracking-widest uppercase">
+                  V.2.0 Premium
+                </span>
+                <h1 className="text-3xl font-extrabold text-white tracking-tight">E-Monit KPM</h1>
+                <p className="text-blue-200 text-sm font-medium mt-1">Sistem Pendamping Sosial</p>
               </div>
-              <button onClick={() => setView('settings')} className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-lg border-2 border-orange-500 relative overflow-hidden group">
-                 <i className="fas fa-cog text-blue-600 group-hover:rotate-90 transition duration-300"></i>
-                 {lockedKecamatan && <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></span>}
+              <button onClick={() => setView('settings')} className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-lg border border-white/20 relative overflow-hidden group hover:bg-white/20 transition-all duration-300">
+                 <i className="fas fa-sliders-h text-white text-lg group-hover:rotate-180 transition-transform duration-500"></i>
+                 {lockedKecamatan && <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-orange-500 rounded-full shadow-[0_0_10px_rgba(249,115,22,1)]"></span>}
               </button>
             </div>
-            <div className="relative z-10">
-              <i className="fas fa-search absolute left-4 top-3.5 text-blue-300"></i>
+            
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <i className="fas fa-search text-blue-300 group-focus-within:text-blue-600 transition-colors"></i>
+              </div>
               <input 
                 type="text" 
-                placeholder="Cari Nama / ID KPM..." 
+                placeholder="Cari Nama atau ID KPM..." 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-blue-900/40 border border-blue-400/50 text-white placeholder-blue-200 rounded-full py-3 pl-12 pr-4 outline-none focus:bg-blue-800/60 transition shadow-inner font-medium text-sm backdrop-blur-md"
+                className="w-full bg-white/10 border border-white/20 text-white placeholder-blue-200/80 rounded-2xl py-4 pl-12 pr-4 outline-none focus:bg-white focus:text-slate-800 focus:border-white transition-all duration-300 shadow-inner font-medium text-sm backdrop-blur-md"
               />
             </div>
           </div>
 
-          <div className="p-5 relative -mt-5 z-10 space-y-5">
-            {/* VIEW DASHBOARD */}
+          <div className="p-5 relative -mt-6 z-10 space-y-5">
+            
+            {/* VIEW: DASHBOARD */}
             {view === 'dashboard' && (
-              <div className="animate-fadeIn space-y-5">
-                <div className="glass-card p-4 border-l-4 border-l-blue-500 flex justify-between items-center">
+              <div className="animate-popIn space-y-5">
+                <div className="glass-card p-5 border-l-[5px] border-l-blue-600 flex justify-between items-center">
                    <div>
-                     <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Cakupan Wilayah</p>
-                     <h3 className="font-bold text-blue-900 text-sm">
-                       {lockedKecamatan ? `Kec. ${lockedKecamatan}` : 'Semua Kecamatan'}
+                     <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1.5">Wilayah Tugas</p>
+                     <h3 className="font-extrabold text-slate-800 text-base">
+                       {lockedKecamatan ? `Kecamatan ${lockedKecamatan}` : 'Semua Wilayah'}
                      </h3>
                    </div>
-                   <button onClick={() => setView('settings')} className="text-xs bg-orange-100 text-orange-600 px-3 py-1.5 rounded-lg font-bold">
-                     Ubah <i className="fas fa-edit ml-1"></i>
+                   <button onClick={() => setView('settings')} className="text-xs bg-slate-100 hover:bg-blue-50 text-slate-600 hover:text-blue-600 px-4 py-2 rounded-xl font-bold transition-colors">
+                     Ubah <i className="fas fa-pen ml-1"></i>
                    </button>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="glass-card p-5 text-center relative overflow-hidden">
-                    <div className="absolute -right-4 -top-4 w-16 h-16 bg-blue-50 rounded-full opacity-50"></div>
-                    <div className="w-12 h-12 mx-auto bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-3 shadow-inner">
-                      <i className="fas fa-users text-xl"></i>
+                  <div className="glass-card p-6 text-center relative overflow-hidden group hover:-translate-y-1 transition-transform">
+                    <div className="absolute -right-6 -top-6 w-24 h-24 bg-blue-50 rounded-full opacity-50 group-hover:scale-110 transition-transform duration-500"></div>
+                    <div className="w-14 h-14 mx-auto bg-gradient-to-br from-blue-100 to-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-4 shadow-sm border border-blue-100">
+                      <i className="fas fa-users text-2xl"></i>
                     </div>
-                    <h3 className="text-3xl font-extrabold text-gray-800">{filteredData.length}</h3>
-                    <p className="text-xs text-gray-500 font-bold mt-1 uppercase tracking-wide">Total KPM</p>
+                    <h3 className="text-4xl font-extrabold text-slate-800 mb-1">{filteredData.length}</h3>
+                    <p className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">Total KPM</p>
                   </div>
-                  <div className="glass-card p-5 text-center relative overflow-hidden">
-                    <div className="absolute -right-4 -top-4 w-16 h-16 bg-orange-50 rounded-full opacity-50"></div>
-                    <div className="w-12 h-12 mx-auto bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mb-3 shadow-inner">
-                      <i className="fas fa-check-double text-xl"></i>
+                  
+                  <div className="glass-card p-6 text-center relative overflow-hidden group hover:-translate-y-1 transition-transform">
+                    <div className="absolute -left-6 -bottom-6 w-24 h-24 bg-orange-50 rounded-full opacity-50 group-hover:scale-110 transition-transform duration-500"></div>
+                    <div className="w-14 h-14 mx-auto bg-gradient-to-br from-orange-100 to-orange-50 text-orange-600 rounded-2xl flex items-center justify-center mb-4 shadow-sm border border-orange-100">
+                      <i className="fas fa-check-circle text-2xl"></i>
                     </div>
-                    <h3 className="text-3xl font-extrabold text-gray-800">
+                    <h3 className="text-4xl font-extrabold text-slate-800 mb-1">
                       {filteredData.filter(d => d.status === 'Sudah Transaksi').length}
                     </h3>
-                    <p className="text-xs text-gray-500 font-bold mt-1 uppercase tracking-wide">Selesai Salur</p>
+                    <p className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">Selesai Salur</p>
                   </div>
                 </div>
 
-                <h2 className="text-sm font-bold text-gray-800 ml-1 flex items-center"><i className="fas fa-bolt text-orange-500 mr-2"></i> Menu Cepat</h2>
-                <div className="glass-card p-2">
-                  <button onClick={() => setView('data')} className="w-full flex items-center justify-between p-4 rounded-xl hover:bg-slate-50 transition active:scale-95">
-                    <div className="flex items-center">
-                      <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mr-4"><i className="fas fa-database"></i></div>
-                      <div className="text-left"><h4 className="font-bold text-gray-800 text-sm">Database Spreadsheet</h4><p className="text-xs text-gray-500">Lihat & Filter Data KPM</p></div>
-                    </div>
-                    <i className="fas fa-chevron-right text-gray-300"></i>
-                  </button>
-                  <div className="h-px bg-gray-100 mx-4"></div>
-                  <button onClick={() => setView('monitoring')} className="w-full flex items-center justify-between p-4 rounded-xl hover:bg-slate-50 transition active:scale-95">
-                    <div className="flex items-center">
-                      <div className="w-10 h-10 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mr-4"><i className="fas fa-clipboard-check"></i></div>
-                      <div className="text-left"><h4 className="font-bold text-gray-800 text-sm">Input Monitoring</h4><p className="text-xs text-gray-500">P2K2 & Transaksi</p></div>
-                    </div>
-                    <i className="fas fa-chevron-right text-gray-300"></i>
-                  </button>
+                <div className="pt-2">
+                  <h2 className="text-sm font-bold text-slate-800 ml-2 mb-3 flex items-center">
+                    <i className="fas fa-compass text-orange-500 mr-2 text-lg"></i> Akses Cepat
+                  </h2>
+                  <div className="glass-card p-2 space-y-1">
+                    <button onClick={() => setView('data')} className="w-full flex items-center justify-between p-4 rounded-xl hover:bg-slate-50 transition-all active:scale-[0.98] group">
+                      <div className="flex items-center">
+                        <div className="w-12 h-12 bg-slate-100 text-slate-600 rounded-xl flex items-center justify-center mr-4 group-hover:bg-blue-100 group-hover:text-blue-600 transition-colors"><i className="fas fa-folder-open text-lg"></i></div>
+                        <div className="text-left"><h4 className="font-bold text-slate-800 text-sm">Database KPM</h4><p className="text-xs text-slate-500 mt-0.5">Lihat & Filter Data Lengkap</p></div>
+                      </div>
+                      <i className="fas fa-chevron-right text-slate-300 group-hover:text-blue-500 transition-colors"></i>
+                    </button>
+                    <div className="h-px bg-slate-100 mx-4"></div>
+                    <button onClick={() => setView('monitoring')} className="w-full flex items-center justify-between p-4 rounded-xl hover:bg-slate-50 transition-all active:scale-[0.98] group">
+                      <div className="flex items-center">
+                        <div className="w-12 h-12 bg-slate-100 text-slate-600 rounded-xl flex items-center justify-center mr-4 group-hover:bg-orange-100 group-hover:text-orange-600 transition-colors"><i className="fas fa-clipboard-list text-lg"></i></div>
+                        <div className="text-left"><h4 className="font-bold text-slate-800 text-sm">Input Monitoring</h4><p className="text-xs text-slate-500 mt-0.5">P2K2 & Status Transaksi</p></div>
+                      </div>
+                      <i className="fas fa-chevron-right text-slate-300 group-hover:text-orange-500 transition-colors"></i>
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* VIEW DATA */}
+            {/* VIEW: DATA & FILTER */}
             {view === 'data' && (
-              <div className="animate-fadeIn space-y-4">
-                <div className="glass-card p-4 space-y-3">
-                  <div className="flex justify-between items-center mb-1">
-                    <h2 className="font-bold text-blue-900 text-sm"><i className="fas fa-filter mr-2 text-orange-500"></i>Filter Data</h2>
-                    <button onClick={fetchData} className="text-xs font-bold text-blue-600"><i className="fas fa-sync-alt mr-1"></i> Refresh</button>
+              <div className="animate-popIn space-y-5">
+                <div className="glass-card p-5 space-y-4">
+                  <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+                    <h2 className="font-bold text-slate-800 text-sm"><i className="fas fa-filter mr-2 text-blue-500"></i>Penyaringan Data</h2>
+                    <button onClick={fetchData} className="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition"><i className="fas fa-sync-alt mr-1"></i> Muat Ulang</button>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1 block">Kecamatan</label>
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 block">Kecamatan</label>
                       <select 
                         value={filterKecamatan} 
                         onChange={(e) => { setFilterKecamatan(e.target.value); setFilterDesa(''); }}
-                        className="input-glossy text-sm py-2 px-3 font-medium"
+                        className="input-glossy text-sm text-slate-800"
                         disabled={!!lockedKecamatan}
                       >
                         <option value="">Semua Kecamatan</option>
@@ -256,11 +321,11 @@
                       </select>
                     </div>
                     <div>
-                      <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1 block">Desa / Kelurahan</label>
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 block">Desa / Kel.</label>
                       <select 
                         value={filterDesa} 
                         onChange={(e) => setFilterDesa(e.target.value)}
-                        className="input-glossy text-sm py-2 px-3 font-medium"
+                        className="input-glossy text-sm text-slate-800"
                         disabled={!filterKecamatan}
                       >
                         <option value="">Semua Desa</option>
@@ -270,38 +335,40 @@
                   </div>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {filteredData.length === 0 ? (
-                    <div className="text-center p-8 bg-white rounded-2xl border border-dashed border-gray-300">
-                      <i className="fas fa-folder-open text-4xl text-gray-300 mb-3"></i>
-                      <p className="text-gray-500 text-sm font-bold">Data tidak ditemukan</p>
+                    <div className="text-center py-12 bg-white/50 backdrop-blur-sm rounded-3xl border-2 border-dashed border-slate-200">
+                      <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i className="fas fa-box-open text-3xl text-slate-400"></i>
+                      </div>
+                      <p className="text-slate-600 text-sm font-bold">Data tidak ditemukan</p>
+                      <p className="text-slate-400 text-xs mt-1">Coba ubah kata kunci atau filter wilayah</p>
                     </div>
                   ) : (
                     filteredData.map((item, index) => (
-                      <div key={index} className="glass-card p-4 flex flex-col hover:border-blue-300 transition cursor-pointer" onClick={() => setView('monitoring')}>
-                        <div className="flex justify-between items-start mb-2">
+                      <div key={index} className="glass-card p-5 flex flex-col hover:border-blue-300 hover:shadow-lg transition-all cursor-pointer active:scale-[0.98]" onClick={() => setView('monitoring')}>
+                        <div className="flex justify-between items-start mb-3">
                           <div className="flex items-center">
-                            <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-blue-50 rounded-full border border-blue-200 flex items-center justify-center text-blue-600 mr-3 font-bold text-sm shadow-sm">
+                            <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl flex items-center justify-center text-white mr-4 shadow-md font-extrabold text-lg">
                               {item.nama.charAt(0)}
                             </div>
                             <div>
-                              <h4 className="font-extrabold text-gray-800 text-sm">{item.nama}</h4>
-                              <p className="text-[11px] text-gray-500 font-medium">ID: <span className="text-blue-600">{item.id}</span></p>
+                              <h4 className="font-extrabold text-slate-800 text-sm mb-0.5">{item.nama}</h4>
+                              <p className="text-xs text-slate-500 font-medium font-mono bg-slate-100 inline-block px-2 py-0.5 rounded-md">ID: {item.id}</p>
                             </div>
                           </div>
-                          <span className={`text-[10px] px-2 py-1 rounded-md font-bold uppercase tracking-wider ${item.status === 'Sudah Transaksi' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
-                            {item.status === 'Sudah Transaksi' ? <i className="fas fa-check mr-1"></i> : <i className="fas fa-times mr-1"></i>}
-                            {item.status.split(' ')[0]}
-                          </span>
                         </div>
-                        <div className="grid grid-cols-2 gap-2 mt-1 pt-3 border-t border-gray-100">
-                           <div>
-                             <p className="text-[10px] text-gray-400 font-bold uppercase">Wilayah</p>
-                             <p className="text-xs text-gray-700 font-semibold">{item.desa}</p>
+                        
+                        <div className="grid grid-cols-3 gap-2 mt-2 pt-3 border-t border-slate-100">
+                           <div className="col-span-2">
+                             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Lokasi</p>
+                             <p className="text-xs text-slate-700 font-bold truncate"><i className="fas fa-map-marker-alt text-orange-500 mr-1"></i>{item.desa}</p>
                            </div>
                            <div className="text-right">
-                             <p className="text-[10px] text-gray-400 font-bold uppercase">Komponen</p>
-                             <p className="text-xs text-orange-600 font-bold">{item.kategori}</p>
+                             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Status</p>
+                             <span className={`text-[10px] px-2 py-1 rounded-md font-bold uppercase tracking-wider inline-block ${item.status === 'Sudah Transaksi' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-600'}`}>
+                               {item.status === 'Sudah Transaksi' ? 'SELESAI' : 'BELUM'}
+                             </span>
                            </div>
                         </div>
                       </div>
@@ -311,86 +378,115 @@
               </div>
             )}
 
-            {/* VIEW SETTINGS */}
+            {/* VIEW: SETTINGS */}
             {view === 'settings' && (
-              <div className="animate-fadeIn space-y-4">
-                <h2 className="font-bold text-blue-900 text-lg mb-2"><i className="fas fa-cogs mr-2 text-orange-500"></i>Pengaturan Aplikasi</h2>
+              <div className="animate-popIn space-y-5">
+                <div className="flex items-center mb-2 ml-1">
+                  <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mr-3"><i className="fas fa-cogs text-lg"></i></div>
+                  <h2 className="font-extrabold text-slate-800 text-xl">Konfigurasi</h2>
+                </div>
                 
-                <div className="glass-card p-5">
-                   <h3 className="font-bold text-gray-800 text-sm mb-1">Kunci Wilayah (Lock Kecamatan)</h3>
-                   <p className="text-xs text-gray-500 mb-4">Pilih kecamatan agar aplikasi hanya menampilkan data wilayah tugas Anda. Ini akan mempercepat performa.</p>
+                <div className="glass-card p-6">
+                   <h3 className="font-extrabold text-slate-800 text-base mb-2">Fokus Wilayah (Lock)</h3>
+                   <p className="text-xs text-slate-500 mb-5 leading-relaxed">Kunci aplikasi hanya pada kecamatan dampingan Anda. Ini akan sangat mempercepat pencarian data dan menghemat kuota internet.</p>
                    
-                   <select 
-                      value={lockedKecamatan} 
-                      onChange={(e) => handleLockKecamatan(e.target.value)}
-                      className="input-glossy text-sm mb-4 font-bold text-blue-900"
-                    >
-                      <option value="">-- Jangan Dikunci (Tampilkan Semua) --</option>
-                      {uniqueKecamatan.map(kec => <option key={kec} value={kec}>{kec}</option>)}
-                    </select>
+                   <div className="relative mb-6">
+                     <i className="fas fa-map-pin absolute left-4 top-[1.1rem] text-slate-400"></i>
+                     <select 
+                        value={lockedKecamatan} 
+                        onChange={(e) => handleLockKecamatan(e.target.value)}
+                        className="input-glossy pl-10 text-sm font-bold text-blue-900 appearance-none bg-slate-50"
+                      >
+                        <option value="">-- Tampilkan Semua Kecamatan --</option>
+                        {uniqueKecamatan.map(kec => <option key={kec} value={kec}>{kec}</option>)}
+                      </select>
+                      <i className="fas fa-chevron-down absolute right-4 top-[1.1rem] text-slate-400 pointer-events-none"></i>
+                   </div>
 
-                    <button onClick={() => setView('dashboard')} className="btn-blue-glossy w-full py-3 rounded-xl font-bold text-sm text-white shadow-lg flex items-center justify-center">
-                      <i className="fas fa-save mr-2"></i> Simpan Pengaturan
+                    <button onClick={() => setView('dashboard')} className="btn-blue-glossy w-full py-4 rounded-2xl font-bold text-sm text-white shadow-xl flex items-center justify-center">
+                      <i className="fas fa-check-circle mr-2 text-lg"></i> Terapkan Pengaturan
                     </button>
+                </div>
+
+                <div className="text-center mt-8">
+                  <p className="text-xs text-slate-400 font-medium">E-Monitoring PKH v2.0</p>
+                  <p className="text-[10px] text-slate-400 mt-1">Dibuat khusus untuk Pendamping Sosial</p>
                 </div>
               </div>
             )}
 
-            {/* VIEW MONITORING */}
+            {/* VIEW: MONITORING (FORM INPUT) */}
             {view === 'monitoring' && (
-              <div className="animate-fadeIn space-y-4">
-                <h2 className="font-bold text-blue-900 text-lg mb-2"><i className="fas fa-edit mr-2 text-orange-500"></i>Input Monitoring</h2>
-                <div className="glass-card p-5 border-t-4 border-t-orange-500">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1">Pilih KPM</label>
-                  <select className="input-glossy text-sm font-bold text-gray-800 mb-4">
-                    {filteredData.slice(0,10).map(item => (
-                      <option key={item.id} value={item.id}>{item.nama} - {item.desa}</option>
-                    ))}
-                  </select>
+              <div className="animate-popIn space-y-5">
+                <div className="flex items-center mb-2 ml-1">
+                  <div className="w-10 h-10 bg-orange-100 text-orange-600 rounded-xl flex items-center justify-center mr-3"><i className="fas fa-edit text-lg"></i></div>
+                  <h2 className="font-extrabold text-slate-800 text-xl">Form Monitoring</h2>
+                </div>
 
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-2">Kehadiran P2K2 (Bulan)</label>
-                  <div className="grid grid-cols-4 gap-2 mb-5">
-                    {[1,2,3,4].map(bln => (
-                      <button key={bln} onClick={() => handleSave(`Absen P2K2 Bulan ${bln}`)} className={`py-2 rounded-lg text-xs font-bold transition active:scale-95 ${bln === 1 ? 'bg-gradient-to-b from-emerald-400 to-green-500 text-white shadow-md' : 'bg-slate-100 text-slate-500 border border-slate-200'}`}>
-                        {bln === 1 && <i className="fas fa-check mr-1"></i>} B {bln}
-                      </button>
-                    ))}
+                <div className="glass-card p-6 border-t-[5px] border-t-orange-500">
+                  
+                  <div className="mb-5">
+                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest block mb-2">Pilih KPM Tersasar</label>
+                    <select className="input-glossy text-sm font-bold text-slate-800">
+                      {filteredData.slice(0,10).map(item => (
+                        <option key={item.id} value={item.id}>{item.nama} ({item.desa})</option>
+                      ))}
+                    </select>
                   </div>
 
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1">Status Salur (Per 3 Bulan)</label>
-                  <select className="input-glossy text-sm mb-5 font-bold">
-                    <option>Tahap 1: Belum Transaksi</option>
-                    <option>Tahap 1: Sudah Transaksi</option>
-                  </select>
+                  <div className="mb-6 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest block mb-3">Kehadiran P2K2 (Bulan)</label>
+                    <div className="grid grid-cols-4 gap-3">
+                      {[1,2,3,4].map(bln => (
+                        <button key={bln} onClick={() => handleSave(`Absen P2K2 Bulan ${bln}`)} className={`py-3 rounded-xl text-xs font-bold transition-all active:scale-90 ${bln === 1 ? 'bg-gradient-to-br from-emerald-400 to-emerald-600 text-white shadow-lg shadow-emerald-200 border-none' : 'bg-white text-slate-500 border border-slate-200 hover:border-blue-300 hover:text-blue-600'}`}>
+                          {bln === 1 ? <i className="fas fa-check mr-1"></i> : `B${bln}`}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
-                  <button onClick={() => handleSave('Data Monitoring')} className="btn-orange-glossy w-full py-3.5 rounded-xl font-bold text-sm text-white shadow-lg flex justify-center items-center">
-                    <i className="fas fa-cloud-upload-alt mr-2 text-lg"></i> Simpan ke Spreadsheet
+                  <div className="mb-8">
+                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest block mb-2">Status Salur (Tahap Berjalan)</label>
+                    <select className="input-glossy text-sm font-bold">
+                      <option>Tahap 1: Belum Transaksi</option>
+                      <option>Tahap 1: Sudah Transaksi</option>
+                    </select>
+                  </div>
+
+                  <button onClick={() => handleSave('Data Monitoring')} className="btn-orange-glossy w-full py-4 rounded-2xl font-bold text-sm text-white shadow-xl shadow-orange-200 flex justify-center items-center">
+                    <i className="fas fa-cloud-upload-alt mr-2 text-lg"></i> Simpan Laporan
                   </button>
                 </div>
               </div>
             )}
+
           </div>
 
-          <div className="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-[480px] bg-white/90 backdrop-blur-xl shadow-[0_-10px_40px_rgba(0,0,0,0.08)] border-t border-gray-100 rounded-t-3xl flex justify-around px-2 py-3 z-50">
+          {/* BOTTOM NAVIGATION PREMIUM */}
+          <div className="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-[480px] bg-white/80 backdrop-blur-xl shadow-[0_-15px_40px_rgba(0,0,0,0.06)] border-t border-white/60 rounded-t-[2rem] flex justify-around px-2 py-3 z-50">
             {[
-              { id: 'dashboard', icon: 'fa-home', label: 'Home' },
-              { id: 'data', icon: 'fa-database', label: 'Data' },
+              { id: 'dashboard', icon: 'fa-home', label: 'Utama' },
+              { id: 'data', icon: 'fa-database', label: 'Data KPM' },
               { id: 'monitoring', icon: 'fa-clipboard-check', label: 'Monitor' },
-              { id: 'settings', icon: 'fa-cogs', label: 'Seting' }
+              { id: 'settings', icon: 'fa-cog', label: 'Seting' }
             ].map((item) => (
               <div 
                 key={item.id}
                 onClick={() => setView(item.id)} 
-                className={`flex flex-col items-center justify-center w-1/4 cursor-pointer transition-all duration-300 ${view === item.id ? 'text-orange-500 transform -translate-y-1' : 'text-slate-400 hover:text-blue-400'}`}
+                className={`flex flex-col items-center justify-center w-1/4 cursor-pointer transition-all duration-300 group ${view === item.id ? 'transform -translate-y-2' : ''}`}
               >
-                <div className={`relative flex items-center justify-center w-10 h-10 rounded-full mb-1 transition-all duration-300 ${view === item.id ? 'bg-orange-50' : 'bg-transparent'}`}>
-                  <i className={`fas ${item.icon} text-lg`}></i>
-                  {view === item.id && <div className="absolute -bottom-1 w-1.5 h-1.5 bg-orange-500 rounded-full"></div>}
+                <div className={`relative flex items-center justify-center w-12 h-12 rounded-2xl mb-1 transition-all duration-300 ${view === item.id ? 'bg-gradient-to-br from-blue-600 to-blue-800 text-white shadow-lg shadow-blue-200' : 'bg-transparent text-slate-400 group-hover:text-blue-500 group-hover:bg-blue-50'}`}>
+                  <i className={`fas ${item.icon} text-xl`}></i>
                 </div>
-                <span className={`text-[10px] font-bold ${view === item.id ? 'text-orange-600' : ''}`}>{item.label}</span>
+                <span className={`text-[10px] font-extrabold transition-colors duration-300 ${view === item.id ? 'text-blue-700' : 'text-slate-400 opacity-0 transform translate-y-2 group-hover:opacity-100 group-hover:translate-y-0'}`}>
+                  {view === item.id ? item.label : item.label}
+                </span>
+                {/* Active Indicator Dot */}
+                {view === item.id && <div className="absolute -bottom-1.5 w-1.5 h-1.5 bg-blue-600 rounded-full"></div>}
               </div>
             ))}
           </div>
+
         </div>
       );
     }

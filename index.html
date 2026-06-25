@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>E-Monitoring PKH Premium</title>
   
+  <!-- FontAwesome untuk stabilitas tanpa build system -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -17,20 +21,15 @@
     }
   </script>
 
+  <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   
+  <!-- React & ReactDOM (Versi UMD Global - Bebas Error Import) -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  
+  <!-- Babel Standalone -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-  <script type="importmap">
-    {
-      "imports": {
-        "react": "https://esm.sh/react@18.2.0",
-        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
-        "react/jsx-runtime": "https://esm.sh/react@18.2.0/jsx-runtime",
-        "lucide-react": "https://esm.sh/lucide-react@0.292.0"
-      }
-    }
-  </script>
 
   <style>
     body { 
@@ -77,14 +76,9 @@
   
   <div id="root"></div>
 
-  <script type="text/babel" data-type="module">
-    import React, { useState, useEffect, useMemo } from 'react';
-    import { createRoot } from 'react-dom/client';
-    import { 
-      Home, Database, ClipboardCheck, Settings, Moon, Sun, 
-      Search, MapPin, CheckCircle2, ChevronRight, UploadCloud,
-      Users, AlertCircle, RefreshCw, FolderOpen
-    } from 'lucide-react';
+  <!-- Script type text/babel (TIDAK MENGGUNAKAN IMPORT) -->
+  <script type="text/babel">
+    const { useState, useEffect, useMemo } = React;
 
     const GAS_URL = "https://script.google.com/macros/s/AKfycby_7rAmJQh9CM9Zcl0eqmApjga1JtTwX410VcrRDURnZdSARCdtS247saQeK-raJkNF/exec"; 
 
@@ -142,7 +136,7 @@
             showToast('Format tabel server tidak sesuai', 'error');
           }
         } catch (error) {
-          showToast('Mode Offline: Menampilkan data lokal (Mock)', 'error');
+          showToast('Mode Offline: Menampilkan data lokal', 'error');
         } finally {
           setIsLoading(false);
         }
@@ -159,9 +153,8 @@
         
         setIsLoading(true);
         try {
-          // Implementasi fetch POST ke GAS/Firestore Anda di sini.
-          // Contoh payload: JSON.stringify({ id: selectedKPM, status: statusSalur })
-          await new Promise(resolve => setTimeout(resolve, 1200)); // Simulasi network delay
+          // Implementasi fetch POST ke Firebase/GAS akan berada di sini.
+          await new Promise(resolve => setTimeout(resolve, 1200)); 
           showToast(`Laporan ${selectedKPM} tersimpan ke database!`, 'success');
           setView('dashboard');
         } catch (error) {
@@ -194,7 +187,7 @@
           {toast.show && (
             <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-[400px] animate-slideUp">
               <div className={`flex items-center p-4 rounded-2xl shadow-xl text-white backdrop-blur-md border border-white/20 ${toast.type === 'success' ? 'bg-emerald-600/90' : 'bg-rose-600/90'}`}>
-                {toast.type === 'success' ? <CheckCircle2 className="w-5 h-5 mr-3" /> : <AlertCircle className="w-5 h-5 mr-3" />}
+                <i className={`fas ${toast.type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'} mr-3 text-lg`}></i>
                 <span className="font-semibold tracking-wide text-sm">{toast.message}</span>
               </div>
             </div>
@@ -204,8 +197,8 @@
           {isLoading && (
             <div className="fixed inset-0 z-[90] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center">
               <div className="glass-card p-8 rounded-[2rem] flex flex-col items-center animate-slideUp">
-                <RefreshCw className="w-10 h-10 text-blue-500 animate-spin mb-4" />
-                <h3 className="text-slate-800 dark:text-white font-bold text-lg">Sinkronisasi...</h3>
+                <i className="fas fa-sync-alt text-blue-500 animate-spin text-4xl mb-4"></i>
+                <h3 className="text-slate-800 dark:text-white font-bold text-lg">Memproses...</h3>
               </div>
             </div>
           )}
@@ -223,12 +216,12 @@
                 onClick={() => setDarkMode(!darkMode)} 
                 className="w-10 h-10 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/20 hover:bg-white/20 transition-all"
               >
-                 {darkMode ? <Sun className="w-5 h-5 text-amber-300" /> : <Moon className="w-5 h-5 text-blue-100" />}
+                 <i className={`fas ${darkMode ? 'fa-sun text-amber-300' : 'fa-moon text-blue-100'}`}></i>
               </button>
             </div>
             
             <div className="relative group">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-300 group-focus-within:text-blue-500 transition-colors" />
+              <i className="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-blue-300 group-focus-within:text-blue-500 transition-colors"></i>
               <input 
                 type="text" 
                 placeholder="Cari Nama / ID KPM..." 
@@ -259,16 +252,16 @@
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="glass-card p-5 text-center rounded-3xl relative overflow-hidden">
-                    <div className="w-12 h-12 mx-auto bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center mb-3">
-                      <Users className="w-6 h-6" />
+                    <div className="w-12 h-12 mx-auto bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center mb-3 text-xl">
+                      <i className="fas fa-users"></i>
                     </div>
                     <h3 className="text-3xl font-extrabold text-slate-800 dark:text-white mb-1">{filteredData.length}</h3>
                     <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Total KPM</p>
                   </div>
                   
                   <div className="glass-card p-5 text-center rounded-3xl relative overflow-hidden">
-                    <div className="w-12 h-12 mx-auto bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 rounded-2xl flex items-center justify-center mb-3">
-                      <CheckCircle2 className="w-6 h-6" />
+                    <div className="w-12 h-12 mx-auto bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 rounded-2xl flex items-center justify-center mb-3 text-xl">
+                      <i className="fas fa-check-circle"></i>
                     </div>
                     <h3 className="text-3xl font-extrabold text-slate-800 dark:text-white mb-1">
                       {filteredData.filter(d => d.status === 'Sudah Transaksi').length}
@@ -282,17 +275,17 @@
                   <div className="glass-card p-2 rounded-2xl space-y-1">
                     <button onClick={() => setView('data')} className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors group">
                       <div className="flex items-center">
-                        <div className="w-10 h-10 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg flex items-center justify-center mr-3 group-hover:text-blue-500"><FolderOpen className="w-5 h-5" /></div>
+                        <div className="w-10 h-10 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg flex items-center justify-center mr-3 group-hover:text-blue-500"><i className="fas fa-folder-open"></i></div>
                         <div className="text-left"><h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">Database KPM</h4><p className="text-[11px] text-slate-500">Lihat & Filter Data Lengkap</p></div>
                       </div>
-                      <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-blue-500" />
+                      <i className="fas fa-chevron-right text-slate-400 group-hover:text-blue-500"></i>
                     </button>
                     <button onClick={() => setView('monitoring')} className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors group">
                       <div className="flex items-center">
-                        <div className="w-10 h-10 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg flex items-center justify-center mr-3 group-hover:text-orange-500"><ClipboardCheck className="w-5 h-5" /></div>
+                        <div className="w-10 h-10 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg flex items-center justify-center mr-3 group-hover:text-orange-500"><i className="fas fa-clipboard-check"></i></div>
                         <div className="text-left"><h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">Input Monitoring</h4><p className="text-[11px] text-slate-500">Status Salur & Kehadiran</p></div>
                       </div>
-                      <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-orange-500" />
+                      <i className="fas fa-chevron-right text-slate-400 group-hover:text-orange-500"></i>
                     </button>
                   </div>
                 </div>
@@ -306,7 +299,7 @@
                   <div className="flex justify-between items-center pb-3 border-b border-slate-200 dark:border-slate-700">
                     <h2 className="font-bold text-slate-800 dark:text-white text-sm">Filter Spesifik</h2>
                     <button onClick={fetchData} className="text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-3 py-1.5 rounded-lg flex items-center">
-                      <RefreshCw className="w-3 h-3 mr-1" /> Muat Ulang
+                      <i className="fas fa-sync-alt mr-1"></i> Muat Ulang
                     </button>
                   </div>
                   
@@ -339,7 +332,7 @@
                 <div className="space-y-3">
                   {filteredData.length === 0 ? (
                     <div className="text-center py-10 bg-white/50 dark:bg-slate-800/50 rounded-3xl border border-dashed border-slate-300 dark:border-slate-600">
-                      <Database className="w-10 h-10 text-slate-400 mx-auto mb-3" />
+                      <i className="fas fa-database text-4xl text-slate-400 mb-3 block"></i>
                       <p className="text-slate-600 dark:text-slate-300 text-sm font-bold">Data kosong</p>
                     </div>
                   ) : (
@@ -358,7 +351,7 @@
                         </div>
                         <div className="flex justify-between items-center mt-2 pt-2 border-t border-slate-100 dark:border-slate-700/50">
                            <p className="text-[11px] text-slate-600 dark:text-slate-400 font-medium flex items-center">
-                             <MapPin className="w-3 h-3 text-orange-500 mr-1" /> {item.desa}
+                             <i className="fas fa-map-marker-alt text-orange-500 mr-2"></i> {item.desa}
                            </p>
                            <span className={`text-[9px] px-2 py-1 rounded-md font-bold uppercase tracking-wider ${item.status === 'Sudah Transaksi' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400'}`}>
                              {item.status === 'Sudah Transaksi' ? 'SELESAI' : 'BELUM'}
@@ -432,7 +425,7 @@
                     onClick={handleSaveMonitoring} 
                     className="w-full py-3.5 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-xl font-bold text-sm shadow-lg shadow-orange-500/30 flex justify-center items-center transition-all active:scale-[0.98]"
                   >
-                    <UploadCloud className="w-5 h-5 mr-2" /> Simpan Database
+                    <i className="fas fa-cloud-upload-alt mr-2 text-lg"></i> Simpan Database
                   </button>
                 </div>
               </div>
@@ -442,14 +435,14 @@
           {/* BOTTOM NAVIGATION */}
           <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800 rounded-t-3xl flex justify-around px-2 py-3 z-50">
             {[
-              { id: 'dashboard', icon: Home, label: 'Utama' },
-              { id: 'data', icon: Database, label: 'Data KPM' },
-              { id: 'monitoring', icon: ClipboardCheck, label: 'Monitor' },
-              { id: 'settings', icon: Settings, label: 'Seting' }
+              { id: 'dashboard', icon: 'fa-home', label: 'Utama' },
+              { id: 'data', icon: 'fa-database', label: 'Data KPM' },
+              { id: 'monitoring', icon: 'fa-clipboard-check', label: 'Monitor' },
+              { id: 'settings', icon: 'fa-cog', label: 'Seting' }
             ].map((item) => (
               <div key={item.id} onClick={() => setView(item.id)} className="flex flex-col items-center justify-center w-1/4 cursor-pointer group">
                 <div className={`relative flex items-center justify-center w-10 h-10 rounded-xl mb-1 transition-all ${view === item.id ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' : 'text-slate-400 dark:text-slate-500'}`}>
-                  <item.icon className="w-5 h-5" />
+                  <i className={`fas ${item.icon} text-lg`}></i>
                 </div>
                 <span className={`text-[9px] font-bold transition-colors ${view === item.id ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}`}>{item.label}</span>
               </div>
@@ -460,7 +453,7 @@
       );
     }
 
-    const root = createRoot(document.getElementById('root'));
+    const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(<App />);
   </script>
 </body>

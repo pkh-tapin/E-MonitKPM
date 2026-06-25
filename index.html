@@ -35,7 +35,7 @@
     const { useState, useEffect, useMemo, useRef } = React;
 
     // === GANTI DENGAN URL DEPLOYMENT BARU ANDA ===
-  const GAS_URL = "https://script.google.com/macros/s/AKfycby_7rAmJQh9CM9Zcl0eqmApjga1JtTwX410VcrRDURnZdSARCdtS247saQeK-raJkNF/exec"; 
+    const GAS_URL = "https://script.google.com/macros/s/AKfycby_7rAmJQh9CM9Zcl0eqmApjga1JtTwX410VcrRDURnZdSARCdtS247saQeK-raJkNF/exec"; 
 
     function App() {
       const [view, setView] = useState('dashboard');
@@ -394,7 +394,7 @@
                   <div className="mb-4">
                     <label className="text-[11px] font-bold text-slate-500 block mb-2">Cari KPM</label>
                     <select className="input-modern" value={monKpm} onChange={(e) => setMonKpm(e.target.value)}>
-                      <option value="">-- Pilih KPM Tersasar --</option>
+                      <option value="">-- Pilih KPM Terdaftar --</option>
                       {filteredData.map(item => <option key={item.id} value={item.id}>{item.nama} - {item.desa}</option>)}
                     </select>
                   </div>
@@ -456,3 +456,4 @@
   </script>
 </body>
 </html>
+0
